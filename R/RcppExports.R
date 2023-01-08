@@ -13,6 +13,10 @@ log_marginal_univariate <- function(y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K) {
     .Call(`_ClusterNormal_log_marginal_univariate`, y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K)
 }
 
+log_allocate_prob_univariate <- function(i, current_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus) {
+    .Call(`_ClusterNormal_log_allocate_prob_univariate`, i, current_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus)
+}
+
 log_allocate_prob <- function(i, current_assign, xi, y, gamma_hyper_mat, active_clus) {
     .Call(`_ClusterNormal_log_allocate_prob`, i, current_assign, xi, y, gamma_hyper_mat, active_clus)
 }
@@ -29,20 +33,20 @@ expand_step_univariate <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b
     .Call(`_ClusterNormal_expand_step_univariate`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta)
 }
 
-cluster_assign <- function(K, old_assign, xi, y, gamma_hyper, alpha) {
-    .Call(`_ClusterNormal_cluster_assign`, K, old_assign, xi, y, gamma_hyper, alpha)
+cluster_assign_univariate <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
+    .Call(`_ClusterNormal_cluster_assign_univariate`, K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda)
 }
 
-split_merge <- function(K, old_assign, alpha, xi, y, gamma_hyper, a_theta, b_theta, sm_iter) {
-    .Call(`_ClusterNormal_split_merge`, K, old_assign, alpha, xi, y, gamma_hyper, a_theta, b_theta, sm_iter)
+split_merge_univariate <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
+    .Call(`_ClusterNormal_split_merge_univariate`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
 }
 
 update_alpha <- function(K, alpha, xi, old_assign) {
     .Call(`_ClusterNormal_update_alpha`, K, alpha, xi, old_assign)
 }
 
-cluster_func <- function(K, K_init, y, xi, gamma_hyper, a_theta, b_theta, sm_iter, all_iter, print_iter, iter_print) {
-    .Call(`_ClusterNormal_cluster_func`, K, K_init, y, xi, gamma_hyper, a_theta, b_theta, sm_iter, all_iter, print_iter, iter_print)
+normal_uni <- function(K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print) {
+    .Call(`_ClusterNormal_normal_uni`, K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print)
 }
 
 rcpparma_hello_world <- function() {
