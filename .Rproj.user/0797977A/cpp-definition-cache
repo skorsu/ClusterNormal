@@ -1,5 +1,132 @@
 [
     {
+        "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+        "file_last_write": 1673162959.0,
+        "definitions": [
+            {
+                "usr": "c:@F@active_inactive#I#$@N@arma@S@Col>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "active_inactive(int, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 9,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@sample_clus#$@N@arma@S@Col>#d#$@N@arma@S@Col>#i#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "sample_clus(arma::vec, arma::uvec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 31,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_marginal_univariate#d#d#d#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_marginal_univariate(double, double, double, double, double)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 50,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_allocate_prob#I#$@N@arma@S@Col>#d#S0_#$@N@arma@S@Mat>#d#S1_#$@N@arma@S@Col>#i#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_allocate_prob(int, arma::vec, arma::vec, arma::mat, arma::mat, arma::uvec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 73,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_sum_exp#$@N@arma@S@Col>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_sum_exp(arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 126,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@adjust_alpha#I#$@N@arma@S@Col>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "adjust_alpha(int, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 151,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@rdirichlet_cpp#I#$@N@arma@S@Col>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "rdirichlet_cpp(int, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 168,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@expand_step_univariate#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "expand_step_univariate(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 196,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@cluster_assign#I#$@N@arma@S@Col>#d#S0_#$@N@arma@S@Mat>#d#S1_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "cluster_assign(int, arma::vec, arma::vec, arma::mat, arma::mat, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 255,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@split_merge#I#$@N@arma@S@Col>#d#S0_#S0_#$@N@arma@S@Mat>#d#S1_#d#d#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "split_merge(int, arma::vec, arma::vec, arma::vec, arma::mat, arma::mat, double, double, int)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 295,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@update_alpha#I#$@N@arma@S@Col>#d#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "update_alpha(int, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 473,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@cluster_func#I#I#$@N@arma@S@Mat>#d#$@N@arma@S@Col>#d#S0_#d#d#I#I#b#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "cluster_func(int, int, arma::mat, arma::vec, arma::mat, double, double, int, int, bool, int)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 507,
+                "column": 12,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
         "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/rcpparma_hello_world.cpp",
         "file_last_write": 1672987646.0,
         "definitions": [
