@@ -96,9 +96,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// log_allocate_prob
-arma::vec log_allocate_prob(int i, arma::vec current_assign, arma::vec xi, arma::mat y, arma::mat gamma_hyper_mat, arma::uvec active_clus);
-RcppExport SEXP _ClusterNormal_log_allocate_prob(SEXP iSEXP, SEXP current_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP gamma_hyper_matSEXP, SEXP active_clusSEXP) {
+// log_allocate_prob_multi
+arma::vec log_allocate_prob_multi(int i, arma::vec current_assign, arma::vec xi, arma::mat y, arma::mat mu_0, arma::vec lambda_0, arma::vec nu_0, arma::cube L_0, arma::uvec active_clus);
+RcppExport SEXP _ClusterNormal_log_allocate_prob_multi(SEXP iSEXP, SEXP current_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP mu_0SEXP, SEXP lambda_0SEXP, SEXP nu_0SEXP, SEXP L_0SEXP, SEXP active_clusSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -106,9 +106,12 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type current_assign(current_assignSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type gamma_hyper_mat(gamma_hyper_matSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu_0(mu_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_0(lambda_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type nu_0(nu_0SEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type L_0(L_0SEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type active_clus(active_clusSEXP);
-    rcpp_result_gen = Rcpp::wrap(log_allocate_prob(i, current_assign, xi, y, gamma_hyper_mat, active_clus));
+    rcpp_result_gen = Rcpp::wrap(log_allocate_prob_multi(i, current_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -196,6 +199,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cluster_assign_multi
+Rcpp::List cluster_assign_multi(int K, arma::vec old_assign, arma::vec xi, arma::mat y, arma::vec alpha, arma::mat mu_0, arma::vec lambda_0, arma::vec nu_0, arma::cube L_0);
+RcppExport SEXP _ClusterNormal_cluster_assign_multi(SEXP KSEXP, SEXP old_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP alphaSEXP, SEXP mu_0SEXP, SEXP lambda_0SEXP, SEXP nu_0SEXP, SEXP L_0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type old_assign(old_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu_0(mu_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_0(lambda_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type nu_0(nu_0SEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type L_0(L_0SEXP);
+    rcpp_result_gen = Rcpp::wrap(cluster_assign_multi(K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0));
+    return rcpp_result_gen;
+END_RCPP
+}
 // split_merge_univariate
 Rcpp::List split_merge_univariate(int K, arma::vec old_assign, arma::vec alpha, arma::vec xi, arma::vec y, arma::vec mu_0, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, double a_theta, double b_theta, int sm_iter);
 RcppExport SEXP _ClusterNormal_split_merge_univariate(SEXP KSEXP, SEXP old_assignSEXP, SEXP alphaSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP mu_0SEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP sm_iterSEXP) {
@@ -215,6 +237,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type b_theta(b_thetaSEXP);
     Rcpp::traits::input_parameter< int >::type sm_iter(sm_iterSEXP);
     rcpp_result_gen = Rcpp::wrap(split_merge_univariate(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// split_merge_multi
+Rcpp::List split_merge_multi(int K, arma::vec old_assign, arma::vec alpha, arma::vec xi, arma::mat y, arma::mat mu_0, arma::vec lambda_0, arma::vec nu_0, arma::cube L_0, double a_theta, double b_theta, int sm_iter);
+RcppExport SEXP _ClusterNormal_split_merge_multi(SEXP KSEXP, SEXP old_assignSEXP, SEXP alphaSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP mu_0SEXP, SEXP lambda_0SEXP, SEXP nu_0SEXP, SEXP L_0SEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP sm_iterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type old_assign(old_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu_0(mu_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_0(lambda_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type nu_0(nu_0SEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type L_0(L_0SEXP);
+    Rcpp::traits::input_parameter< double >::type a_theta(a_thetaSEXP);
+    Rcpp::traits::input_parameter< double >::type b_theta(b_thetaSEXP);
+    Rcpp::traits::input_parameter< int >::type sm_iter(sm_iterSEXP);
+    rcpp_result_gen = Rcpp::wrap(split_merge_multi(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -252,6 +296,29 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type all_iter(all_iterSEXP);
     Rcpp::traits::input_parameter< int >::type iter_print(iter_printSEXP);
     rcpp_result_gen = Rcpp::wrap(normal_uni(K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print));
+    return rcpp_result_gen;
+END_RCPP
+}
+// normal_multi
+arma::mat normal_multi(int K, int K_init, arma::mat y, arma::vec xi, arma::mat mu_0, arma::vec lambda_0, arma::vec nu_0, arma::cube L_0, double a_theta, double b_theta, int sm_iter, int all_iter, int iter_print);
+RcppExport SEXP _ClusterNormal_normal_multi(SEXP KSEXP, SEXP K_initSEXP, SEXP ySEXP, SEXP xiSEXP, SEXP mu_0SEXP, SEXP lambda_0SEXP, SEXP nu_0SEXP, SEXP L_0SEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP sm_iterSEXP, SEXP all_iterSEXP, SEXP iter_printSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< int >::type K_init(K_initSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu_0(mu_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_0(lambda_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type nu_0(nu_0SEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type L_0(L_0SEXP);
+    Rcpp::traits::input_parameter< double >::type a_theta(a_thetaSEXP);
+    Rcpp::traits::input_parameter< double >::type b_theta(b_thetaSEXP);
+    Rcpp::traits::input_parameter< int >::type sm_iter(sm_iterSEXP);
+    Rcpp::traits::input_parameter< int >::type all_iter(all_iterSEXP);
+    Rcpp::traits::input_parameter< int >::type iter_print(iter_printSEXP);
+    rcpp_result_gen = Rcpp::wrap(normal_multi(K, K_init, y, xi, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter, all_iter, iter_print));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -306,15 +373,18 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_log_marginal_univariate", (DL_FUNC) &_ClusterNormal_log_marginal_univariate, 5},
     {"_ClusterNormal_log_marginal_multi", (DL_FUNC) &_ClusterNormal_log_marginal_multi, 5},
     {"_ClusterNormal_log_allocate_prob_univariate", (DL_FUNC) &_ClusterNormal_log_allocate_prob_univariate, 9},
-    {"_ClusterNormal_log_allocate_prob", (DL_FUNC) &_ClusterNormal_log_allocate_prob, 6},
+    {"_ClusterNormal_log_allocate_prob_multi", (DL_FUNC) &_ClusterNormal_log_allocate_prob_multi, 9},
     {"_ClusterNormal_log_sum_exp", (DL_FUNC) &_ClusterNormal_log_sum_exp, 1},
     {"_ClusterNormal_rdirichlet_cpp", (DL_FUNC) &_ClusterNormal_rdirichlet_cpp, 2},
     {"_ClusterNormal_expand_step_univariate", (DL_FUNC) &_ClusterNormal_expand_step_univariate, 11},
     {"_ClusterNormal_expand_step_multi", (DL_FUNC) &_ClusterNormal_expand_step_multi, 11},
     {"_ClusterNormal_cluster_assign_univariate", (DL_FUNC) &_ClusterNormal_cluster_assign_univariate, 9},
+    {"_ClusterNormal_cluster_assign_multi", (DL_FUNC) &_ClusterNormal_cluster_assign_multi, 9},
     {"_ClusterNormal_split_merge_univariate", (DL_FUNC) &_ClusterNormal_split_merge_univariate, 12},
+    {"_ClusterNormal_split_merge_multi", (DL_FUNC) &_ClusterNormal_split_merge_multi, 12},
     {"_ClusterNormal_update_alpha", (DL_FUNC) &_ClusterNormal_update_alpha, 4},
     {"_ClusterNormal_normal_uni", (DL_FUNC) &_ClusterNormal_normal_uni, 13},
+    {"_ClusterNormal_normal_multi", (DL_FUNC) &_ClusterNormal_normal_multi, 13},
     {"_ClusterNormal_rcpparma_hello_world", (DL_FUNC) &_ClusterNormal_rcpparma_hello_world, 0},
     {"_ClusterNormal_rcpparma_outerproduct", (DL_FUNC) &_ClusterNormal_rcpparma_outerproduct, 1},
     {"_ClusterNormal_rcpparma_innerproduct", (DL_FUNC) &_ClusterNormal_rcpparma_innerproduct, 1},

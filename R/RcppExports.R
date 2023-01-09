@@ -25,8 +25,8 @@ log_allocate_prob_univariate <- function(i, current_assign, xi, y, a_sigma, b_si
     .Call(`_ClusterNormal_log_allocate_prob_univariate`, i, current_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus)
 }
 
-log_allocate_prob <- function(i, current_assign, xi, y, gamma_hyper_mat, active_clus) {
-    .Call(`_ClusterNormal_log_allocate_prob`, i, current_assign, xi, y, gamma_hyper_mat, active_clus)
+log_allocate_prob_multi <- function(i, current_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus) {
+    .Call(`_ClusterNormal_log_allocate_prob_multi`, i, current_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus)
 }
 
 log_sum_exp <- function(log_unnorm_prob) {
@@ -49,8 +49,16 @@ cluster_assign_univariate <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma
     .Call(`_ClusterNormal_cluster_assign_univariate`, K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda)
 }
 
+cluster_assign_multi <- function(K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0) {
+    .Call(`_ClusterNormal_cluster_assign_multi`, K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0)
+}
+
 split_merge_univariate <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
     .Call(`_ClusterNormal_split_merge_univariate`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
+}
+
+split_merge_multi <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter) {
+    .Call(`_ClusterNormal_split_merge_multi`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter)
 }
 
 update_alpha <- function(K, alpha, xi, old_assign) {
@@ -59,6 +67,10 @@ update_alpha <- function(K, alpha, xi, old_assign) {
 
 normal_uni <- function(K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print) {
     .Call(`_ClusterNormal_normal_uni`, K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print)
+}
+
+normal_multi <- function(K, K_init, y, xi, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter, all_iter, iter_print) {
+    .Call(`_ClusterNormal_normal_multi`, K, K_init, y, xi, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter, all_iter, iter_print)
 }
 
 rcpparma_hello_world <- function() {
