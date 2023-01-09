@@ -35,6 +35,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// log_multi_lgamma
+double log_multi_lgamma(double a, double d);
+RcppExport SEXP _ClusterNormal_log_multi_lgamma(SEXP aSEXP, SEXP dSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type d(dSEXP);
+    rcpp_result_gen = Rcpp::wrap(log_multi_lgamma(a, d));
+    return rcpp_result_gen;
+END_RCPP
+}
 // log_marginal_univariate
 double log_marginal_univariate(double y, double a_sigma_K, double b_sigma_K, double lambda_K, double mu_0_K);
 RcppExport SEXP _ClusterNormal_log_marginal_univariate(SEXP ySEXP, SEXP a_sigma_KSEXP, SEXP b_sigma_KSEXP, SEXP lambda_KSEXP, SEXP mu_0_KSEXP) {
@@ -47,6 +59,21 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type lambda_K(lambda_KSEXP);
     Rcpp::traits::input_parameter< double >::type mu_0_K(mu_0_KSEXP);
     rcpp_result_gen = Rcpp::wrap(log_marginal_univariate(y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K));
+    return rcpp_result_gen;
+END_RCPP
+}
+// log_marginal_multi
+double log_marginal_multi(arma::vec y, arma::vec mu_0, double lambda_0, double nu_0, arma::mat L_0);
+RcppExport SEXP _ClusterNormal_log_marginal_multi(SEXP ySEXP, SEXP mu_0SEXP, SEXP lambda_0SEXP, SEXP nu_0SEXP, SEXP L_0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu_0(mu_0SEXP);
+    Rcpp::traits::input_parameter< double >::type lambda_0(lambda_0SEXP);
+    Rcpp::traits::input_parameter< double >::type nu_0(nu_0SEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type L_0(L_0SEXP);
+    rcpp_result_gen = Rcpp::wrap(log_marginal_multi(y, mu_0, lambda_0, nu_0, L_0));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -126,6 +153,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type a_theta(a_thetaSEXP);
     Rcpp::traits::input_parameter< double >::type b_theta(b_thetaSEXP);
     rcpp_result_gen = Rcpp::wrap(expand_step_univariate(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// expand_step_multi
+Rcpp::List expand_step_multi(arma::cube x);
+RcppExport SEXP _ClusterNormal_expand_step_multi(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(expand_step_multi(x));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -254,12 +292,15 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_active_inactive", (DL_FUNC) &_ClusterNormal_active_inactive, 2},
     {"_ClusterNormal_sample_clus", (DL_FUNC) &_ClusterNormal_sample_clus, 2},
+    {"_ClusterNormal_log_multi_lgamma", (DL_FUNC) &_ClusterNormal_log_multi_lgamma, 2},
     {"_ClusterNormal_log_marginal_univariate", (DL_FUNC) &_ClusterNormal_log_marginal_univariate, 5},
+    {"_ClusterNormal_log_marginal_multi", (DL_FUNC) &_ClusterNormal_log_marginal_multi, 5},
     {"_ClusterNormal_log_allocate_prob_univariate", (DL_FUNC) &_ClusterNormal_log_allocate_prob_univariate, 9},
     {"_ClusterNormal_log_allocate_prob", (DL_FUNC) &_ClusterNormal_log_allocate_prob, 6},
     {"_ClusterNormal_log_sum_exp", (DL_FUNC) &_ClusterNormal_log_sum_exp, 1},
     {"_ClusterNormal_rdirichlet_cpp", (DL_FUNC) &_ClusterNormal_rdirichlet_cpp, 2},
     {"_ClusterNormal_expand_step_univariate", (DL_FUNC) &_ClusterNormal_expand_step_univariate, 11},
+    {"_ClusterNormal_expand_step_multi", (DL_FUNC) &_ClusterNormal_expand_step_multi, 1},
     {"_ClusterNormal_cluster_assign_univariate", (DL_FUNC) &_ClusterNormal_cluster_assign_univariate, 9},
     {"_ClusterNormal_split_merge_univariate", (DL_FUNC) &_ClusterNormal_split_merge_univariate, 12},
     {"_ClusterNormal_update_alpha", (DL_FUNC) &_ClusterNormal_update_alpha, 4},

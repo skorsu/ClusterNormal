@@ -1,8 +1,11 @@
 #include "RcppArmadillo.h"
 // [[Rcpp::depends(RcppArmadillo)]]
 
+#define pi 3.141592653589793238462643383280
+
 // Note to self: ---------------------------------------------------------------
 // * Start with univariate case.
+// * Then, multivariate case.
 
 // User-defined function: ------------------------------------------------------
 // [[Rcpp::export]]
@@ -47,6 +50,17 @@ int sample_clus(arma::vec norm_probs, arma::uvec active_clus){
 }
 
 // [[Rcpp::export]]
+double log_multi_lgamma(double a, double d){
+  double result = 0.0;
+  
+  result += (0.25 * d * (d-1)) * log(pi);
+  arma::vec d_seq = Rcpp::as<arma::vec>(Rcpp::wrap(Rcpp::seq(1, d)));
+  result += sum(arma::lgamma(a + ((1 - d_seq)/2)));
+  
+  return result;
+}
+
+// [[Rcpp::export]]
 double log_marginal_univariate(double y, double a_sigma_K, double b_sigma_K,
                                double lambda_K, double mu_0_K){
   
@@ -66,6 +80,48 @@ double log_marginal_univariate(double y, double a_sigma_K, double b_sigma_K,
   log_marginal += (a_sigma_K * log(b_sigma_K));
   log_marginal -= (a_sigma_K + 0.5) * log(denom_base);
 
+  return log_marginal;
+}
+
+// [[Rcpp::export]]
+double log_marginal_multi(arma::vec y, arma::vec mu_0, double lambda_0, 
+                          double nu_0, arma::mat L_0){
+  
+  /* Description: This is the function for calculating the log of the 
+   *              marginal likelihood of the data (Univariate Case).
+   * Input: Data point (y) and hyperparameter for that cluster 
+   *        (a_sigma, b_sigma, lambda, mu_0)
+   * Output: log(p(yi|a_sigma, b_sigma, lambda, mu_0))
+   */
+  
+  double log_marginal = 0.0;
+  
+  // Posterior parameters for calculating marginal distribution
+  double d = y.size();
+  double nu_n = nu_0 + 1;
+  double lambda_n = lambda_0 + 1;
+  arma::vec diff_y_mu = y - mu_0;
+  arma::mat L_n = L_0 + 
+    ((lambda_0/(lambda_0 + 1)) * (diff_y_mu * arma::trans(diff_y_mu)));
+  
+  // Calculate the log marginal density 
+  log_marginal -= (d/2)*log(pi);
+  log_marginal += log_multi_lgamma(nu_n/2, d) - log_multi_lgamma(nu_0/2, d); 
+  
+  double val_L0;
+  double sign_L0;
+  bool log_det_L0 = arma::log_det(val_L0, sign_L0, L_0);
+  
+  log_marginal += ((nu_0/2) * val_L0 * sign_L0);
+  
+  double val_Ln;
+  double sign_Ln;
+  bool log_det_Ln = arma::log_det(val_Ln, sign_Ln, L_n);
+  
+  log_marginal -= ((nu_n/2) * val_Ln * sign_Ln);
+  log_marginal += ((d/2) * log(lambda_0));
+  log_marginal -= ((d/2) * log(lambda_n));
+  
   return log_marginal;
 }
 
@@ -123,6 +179,7 @@ arma::vec log_allocate_prob_univariate(int i, arma::vec current_assign,
       (0.5 * log(sigma2_star * b_star)) - (((nu + 1)/2) * log(base_term));
   
     log_unnorm.row(k).fill(t + log(n_k + xi_k));
+    
   }
   
   return log_unnorm;
@@ -307,6 +364,18 @@ Rcpp::List expand_step_univariate(int K, arma::vec old_assign, arma::vec alpha,
     result["new_alpha"] = alpha;
     result["new_assign"] = old_assign;
   }
+  
+  return result;
+}
+
+// * Multivariate
+// [[Rcpp::export]]
+Rcpp::List expand_step_multi(arma::cube x){
+  Rcpp::List result;
+  
+  int d = x.n_slices;
+  result["first"] = x.slice(0);
+  result["d"] = d;
   
   return result;
 }

@@ -9,8 +9,16 @@ sample_clus <- function(norm_probs, active_clus) {
     .Call(`_ClusterNormal_sample_clus`, norm_probs, active_clus)
 }
 
+log_multi_lgamma <- function(a, d) {
+    .Call(`_ClusterNormal_log_multi_lgamma`, a, d)
+}
+
 log_marginal_univariate <- function(y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K) {
     .Call(`_ClusterNormal_log_marginal_univariate`, y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K)
+}
+
+log_marginal_multi <- function(y, mu_0, lambda_0, nu_0, L_0) {
+    .Call(`_ClusterNormal_log_marginal_multi`, y, mu_0, lambda_0, nu_0, L_0)
 }
 
 log_allocate_prob_univariate <- function(i, current_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus) {
@@ -31,6 +39,10 @@ rdirichlet_cpp <- function(num_samples, alpha_m) {
 
 expand_step_univariate <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta) {
     .Call(`_ClusterNormal_expand_step_univariate`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta)
+}
+
+expand_step_multi <- function(x) {
+    .Call(`_ClusterNormal_expand_step_multi`, x)
 }
 
 cluster_assign_univariate <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
