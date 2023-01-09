@@ -157,13 +157,23 @@ BEGIN_RCPP
 END_RCPP
 }
 // expand_step_multi
-Rcpp::List expand_step_multi(arma::cube x);
-RcppExport SEXP _ClusterNormal_expand_step_multi(SEXP xSEXP) {
+Rcpp::List expand_step_multi(int K, arma::vec old_assign, arma::vec alpha, arma::vec xi, arma::mat y, arma::mat mu_0, arma::vec lambda_0, arma::vec nu_0, arma::cube L_0, double a_theta, double b_theta);
+RcppExport SEXP _ClusterNormal_expand_step_multi(SEXP KSEXP, SEXP old_assignSEXP, SEXP alphaSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP mu_0SEXP, SEXP lambda_0SEXP, SEXP nu_0SEXP, SEXP L_0SEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::cube >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(expand_step_multi(x));
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type old_assign(old_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu_0(mu_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_0(lambda_0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type nu_0(nu_0SEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type L_0(L_0SEXP);
+    Rcpp::traits::input_parameter< double >::type a_theta(a_thetaSEXP);
+    Rcpp::traits::input_parameter< double >::type b_theta(b_thetaSEXP);
+    rcpp_result_gen = Rcpp::wrap(expand_step_multi(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -300,7 +310,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_log_sum_exp", (DL_FUNC) &_ClusterNormal_log_sum_exp, 1},
     {"_ClusterNormal_rdirichlet_cpp", (DL_FUNC) &_ClusterNormal_rdirichlet_cpp, 2},
     {"_ClusterNormal_expand_step_univariate", (DL_FUNC) &_ClusterNormal_expand_step_univariate, 11},
-    {"_ClusterNormal_expand_step_multi", (DL_FUNC) &_ClusterNormal_expand_step_multi, 1},
+    {"_ClusterNormal_expand_step_multi", (DL_FUNC) &_ClusterNormal_expand_step_multi, 11},
     {"_ClusterNormal_cluster_assign_univariate", (DL_FUNC) &_ClusterNormal_cluster_assign_univariate, 9},
     {"_ClusterNormal_split_merge_univariate", (DL_FUNC) &_ClusterNormal_split_merge_univariate, 12},
     {"_ClusterNormal_update_alpha", (DL_FUNC) &_ClusterNormal_update_alpha, 4},

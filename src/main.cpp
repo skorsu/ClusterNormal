@@ -94,16 +94,19 @@ double log_marginal_multi(arma::vec y, arma::vec mu_0, double lambda_0,
    * Output: log(p(yi|a_sigma, b_sigma, lambda, mu_0))
    */
   
+
   double log_marginal = 0.0;
   
   // Posterior parameters for calculating marginal distribution
   double d = y.size();
   double nu_n = nu_0 + 1;
   double lambda_n = lambda_0 + 1;
+  
   arma::vec diff_y_mu = y - mu_0;
+
   arma::mat L_n = L_0 + 
     ((lambda_0/(lambda_0 + 1)) * (diff_y_mu * arma::trans(diff_y_mu)));
-  
+
   // Calculate the log marginal density 
   log_marginal -= (d/2)*log(pi);
   log_marginal += log_multi_lgamma(nu_n/2, d) - log_multi_lgamma(nu_0/2, d); 
@@ -370,12 +373,66 @@ Rcpp::List expand_step_univariate(int K, arma::vec old_assign, arma::vec alpha,
 
 // * Multivariate
 // [[Rcpp::export]]
-Rcpp::List expand_step_multi(arma::cube x){
+Rcpp::List expand_step_multi(int K, arma::vec old_assign, arma::vec alpha,
+                             arma::vec xi, arma::mat y, arma::mat mu_0,
+                             arma::vec lambda_0, arma::vec nu_0, arma::cube L_0,
+                             double a_theta, double b_theta){
+  
   Rcpp::List result;
   
-  int d = x.n_slices;
-  result["first"] = x.slice(0);
-  result["d"] = d;
+  // Indicate the existed clusters and inactive clusters
+  Rcpp::List List_clusters = active_inactive(K, old_assign);
+  arma::uvec inactive_clus = List_clusters["inactive"];
+  arma::uvec active_clus = List_clusters["active"];
+  
+  if(active_clus.size() < K){
+    // Select a candidate cluster
+    arma::vec samp_prob = arma::ones(inactive_clus.size())/inactive_clus.size();
+    int candidate_clus = sample_clus(samp_prob, inactive_clus);
+    
+    // Sample alpha for new active cluster
+    alpha.row(candidate_clus - 1).fill(R::rgamma(xi.at(candidate_clus - 1), 1));
+    
+    // Calculate the log of acceptance probability and assign a new cluster
+    arma::vec log_accept_prob = std::log(alpha.at(candidate_clus - 1)) + 
+      std::log((sum(alpha) - alpha.at(candidate_clus - 1))) + 
+      std::log(a_theta) - arma::log(alpha) - std::log(sum(alpha)) -
+      std::log(b_theta);
+    
+    arma::vec new_assign = old_assign;
+    for(int i = 0; i < old_assign.size(); ++i){
+      Rcpp::Rcout << "1" << std::endl;
+      double log_prob = log_accept_prob.at(old_assign.at(i) - 1);
+      
+      // Prepare for log_marginal_multi function
+      arma::vec yi = arma::conv_to<arma::vec>::from(y.row(i));
+      arma::vec mu_0_new = arma::conv_to<arma::vec>::from(mu_0.row(candidate_clus - 1));
+      arma::vec mu_0_old = arma::conv_to<arma::vec>::from(mu_0.row(old_assign.at(i) - 1));
+      Rcpp::Rcout << L_0.slice(2) << std::endl;
+      
+      log_prob += log_marginal_multi(yi, mu_0_new, lambda_0.at(candidate_clus - 1), 
+                                     nu_0.at(candidate_clus - 1), L_0.slice(candidate_clus - 1));
+      
+      log_prob -= log_marginal_multi(yi, mu_0_old, lambda_0.at(old_assign.at(i) - 1), 
+                                     nu_0.at(old_assign.at(i) - 1), 
+                                     L_0.slice(old_assign.at(i) - 1));
+
+      double log_A = std::min(log_prob, 0.0);
+      double log_U = std::log(arma::randu());
+      if(log_U <= log_A){
+        new_assign.row(i).fill(candidate_clus);
+      }
+    }
+    
+    // Adjust an alpha vector
+    arma::vec new_alpha = adjust_alpha(K, new_assign, alpha);
+    
+    result["new_alpha"] = new_alpha;
+    result["new_assign"] = new_assign;
+  } else {
+    result["new_alpha"] = alpha;
+    result["new_assign"] = old_assign;
+  }
   
   return result;
 }

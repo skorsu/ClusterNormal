@@ -41,8 +41,8 @@ expand_step_univariate <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b
     .Call(`_ClusterNormal_expand_step_univariate`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta)
 }
 
-expand_step_multi <- function(x) {
-    .Call(`_ClusterNormal_expand_step_multi`, x)
+expand_step_multi <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta) {
+    .Call(`_ClusterNormal_expand_step_multi`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta)
 }
 
 cluster_assign_univariate <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
