@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-        "file_last_write": 1673308010.0,
+        "file_last_write": 1673371122.0,
         "definitions": [
             {
                 "usr": "c:@F@active_inactive#I#$@N@arma@S@Col>#d#",
@@ -189,7 +189,7 @@
                 "parent_name": "",
                 "name": "normal_multi(int, int, arma::mat, arma::vec, arma::mat, arma::vec, arma::vec, arma::cube, double, double, int, int, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 1002,
+                "line": 998,
                 "column": 11,
                 "hidden": false
             }

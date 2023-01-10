@@ -958,7 +958,6 @@ arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
     }
     
     // Step 1: Expand
-    Rcpp::Rcout << 1 << std::endl;
     Rcpp::List step1 = expand_step_univariate(K, old_assign, alpha_vec, xi, 
                                               y, mu_0, a_sigma, b_sigma, 
                                               lambda, a_theta, b_theta);
@@ -966,7 +965,6 @@ arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
     arma::vec step1_alpha = step1["new_alpha"];
     
     // Step 2: Reassign
-    Rcpp::Rcout << 2 << std::endl;
     Rcpp::List step2 = cluster_assign_univariate(K, step1_assign, xi, y, 
                                                  step1_alpha, mu_0, a_sigma, 
                                                  b_sigma, lambda);
@@ -974,7 +972,6 @@ arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
     arma::vec step2_alpha = step2["new_alpha"];
     
     // Step 3: Split-Merge
-    Rcpp::Rcout << 3 << std::endl;
     Rcpp::List step3 = split_merge_univariate(K, step2_assign, step2_alpha, xi, 
                                               y, mu_0, a_sigma, b_sigma, lambda,
                                               a_theta, b_theta, sm_iter);
@@ -982,7 +979,6 @@ arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
     arma::vec step3_alpha = step3["new_alpha"];
     
     // Step 4: Update alpha
-    Rcpp::Rcout << 4 << std::endl;
     arma::vec step4_alpha = update_alpha(K, step3_alpha, xi, step3_assign);
     
     // Record the cluster assignment
