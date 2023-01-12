@@ -13,16 +13,12 @@ log_multi_lgamma <- function(a, d) {
     .Call(`_ClusterNormal_log_multi_lgamma`, a, d)
 }
 
-log_marginal_univariate <- function(y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K) {
-    .Call(`_ClusterNormal_log_marginal_univariate`, y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K)
+uni_log_marginal <- function(y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K) {
+    .Call(`_ClusterNormal_uni_log_marginal`, y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K)
 }
 
-log_marginal_multi <- function(y, mu_0, lambda_0, nu_0, L_0) {
-    .Call(`_ClusterNormal_log_marginal_multi`, y, mu_0, lambda_0, nu_0, L_0)
-}
-
-log_allocate_prob_univariate <- function(i, current_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus) {
-    .Call(`_ClusterNormal_log_allocate_prob_univariate`, i, current_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus)
+multi_log_marginal <- function(y, mu_0, lambda_0, nu_0, L_0) {
+    .Call(`_ClusterNormal_multi_log_marginal`, y, mu_0, lambda_0, nu_0, L_0)
 }
 
 log_allocate_prob_multi <- function(i, current_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus) {
@@ -33,32 +29,40 @@ log_sum_exp <- function(log_unnorm_prob) {
     .Call(`_ClusterNormal_log_sum_exp`, log_unnorm_prob)
 }
 
+uni_alloc <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus) {
+    .Call(`_ClusterNormal_uni_alloc`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus)
+}
+
+multi_alloc <- function(i, old_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus) {
+    .Call(`_ClusterNormal_multi_alloc`, i, old_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus)
+}
+
 rdirichlet_cpp <- function(num_samples, alpha_m) {
     .Call(`_ClusterNormal_rdirichlet_cpp`, num_samples, alpha_m)
 }
 
-expand_step_univariate <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta) {
-    .Call(`_ClusterNormal_expand_step_univariate`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta)
+uni_expand_step <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta) {
+    .Call(`_ClusterNormal_uni_expand_step`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta)
 }
 
-expand_step_multi <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta) {
-    .Call(`_ClusterNormal_expand_step_multi`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta)
+multi_expand_step <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta) {
+    .Call(`_ClusterNormal_multi_expand_step`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta)
 }
 
-cluster_assign_univariate <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
-    .Call(`_ClusterNormal_cluster_assign_univariate`, K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda)
+uni_cluster_assign <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
+    .Call(`_ClusterNormal_uni_cluster_assign`, K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda)
 }
 
-cluster_assign_multi <- function(K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0) {
-    .Call(`_ClusterNormal_cluster_assign_multi`, K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0)
+multi_cluster_assign <- function(K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0) {
+    .Call(`_ClusterNormal_multi_cluster_assign`, K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0)
 }
 
-split_merge_univariate <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
-    .Call(`_ClusterNormal_split_merge_univariate`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
+uni_split_merge <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
+    .Call(`_ClusterNormal_uni_split_merge`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
 }
 
-split_merge_multi <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter) {
-    .Call(`_ClusterNormal_split_merge_multi`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter)
+multi_split_merge <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter) {
+    .Call(`_ClusterNormal_multi_split_merge`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter)
 }
 
 update_alpha <- function(K, alpha, xi, old_assign) {
