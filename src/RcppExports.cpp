@@ -77,25 +77,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// log_allocate_prob_multi
-arma::vec log_allocate_prob_multi(int i, arma::vec current_assign, arma::vec xi, arma::mat y, arma::mat mu_0, arma::vec lambda_0, arma::vec nu_0, arma::cube L_0, arma::uvec active_clus);
-RcppExport SEXP _ClusterNormal_log_allocate_prob_multi(SEXP iSEXP, SEXP current_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP mu_0SEXP, SEXP lambda_0SEXP, SEXP nu_0SEXP, SEXP L_0SEXP, SEXP active_clusSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type i(iSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type current_assign(current_assignSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type mu_0(mu_0SEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type lambda_0(lambda_0SEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type nu_0(nu_0SEXP);
-    Rcpp::traits::input_parameter< arma::cube >::type L_0(L_0SEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type active_clus(active_clusSEXP);
-    rcpp_result_gen = Rcpp::wrap(log_allocate_prob_multi(i, current_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus));
-    return rcpp_result_gen;
-END_RCPP
-}
 // log_sum_exp
 arma::vec log_sum_exp(arma::vec log_unnorm_prob);
 RcppExport SEXP _ClusterNormal_log_sum_exp(SEXP log_unnorm_probSEXP) {
@@ -391,7 +372,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_log_multi_lgamma", (DL_FUNC) &_ClusterNormal_log_multi_lgamma, 2},
     {"_ClusterNormal_uni_log_marginal", (DL_FUNC) &_ClusterNormal_uni_log_marginal, 5},
     {"_ClusterNormal_multi_log_marginal", (DL_FUNC) &_ClusterNormal_multi_log_marginal, 5},
-    {"_ClusterNormal_log_allocate_prob_multi", (DL_FUNC) &_ClusterNormal_log_allocate_prob_multi, 9},
     {"_ClusterNormal_log_sum_exp", (DL_FUNC) &_ClusterNormal_log_sum_exp, 1},
     {"_ClusterNormal_uni_alloc", (DL_FUNC) &_ClusterNormal_uni_alloc, 9},
     {"_ClusterNormal_multi_alloc", (DL_FUNC) &_ClusterNormal_multi_alloc, 9},

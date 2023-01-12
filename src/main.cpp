@@ -129,87 +129,6 @@ double multi_log_marginal(arma::vec y, arma::vec mu_0, double lambda_0,
 }
 
 // [[Rcpp::export]]
-arma::vec log_allocate_prob_multi(int i, arma::vec current_assign, 
-                                  arma::vec xi, arma::mat y, arma::mat mu_0,
-                                  arma::vec lambda_0, arma::vec nu_0, 
-                                  arma::cube L_0, arma::uvec active_clus){
-  
-  arma::vec log_unnorm = -1 * arma::ones(active_clus.size());
-  
-  // Split the data into two sets: (1) observation i (2) without observation i.
-  arma::vec y_i = arma::conv_to<arma::vec>::from(y.row(i));
-  arma::mat y_not_i = y; 
-  y_not_i.shed_row(i);
-  arma::vec clus_not_i = current_assign; 
-  clus_not_i.shed_row(i);
-  
-  // Calculate the log of unnormalized allocation for each active cluster
-  for(int k = 0; k < active_clus.size(); ++k){
-    int current_c = active_clus[k];
-    arma::uvec current_ci = arma::find(clus_not_i == current_c);
-    
-    // Filter only the observation from cluster i
-    arma::mat y_current = y_not_i.rows(current_ci);
-    
-    // Select the hyperparameter that corresponding to the cluster k
-    double d = y_i.size();
-    arma::vec mu_0k = arma::conv_to<arma::vec>::from(mu_0.row(current_c - 1));
-    arma::mat L_0k = L_0.slice(current_c - 1);
-    double lamb_0k = lambda_0.at(current_c - 1);
-    double nu_0k = nu_0.at(current_c - 1);
-    double xi_k = xi.at(current_c - 1);
-    double n_k = current_ci.size();
-    
-    // Calculate the parameter for the posterior predictive distribution
-    double nu_nk = nu_0k + n_k;
-    double lamb_nk = lamb_0k + n_k;
-    arma::vec ybar = arma::zeros(d);
-    if(n_k > 0){
-      ybar = arma::conv_to<arma::vec>::from(arma::mean(y_current, 0));
-    }
-    arma::vec mu_nk = (((lamb_0k)/(lamb_0k + n_k)) * mu_0k) + 
-      (((n_k)/(lamb_0k + n_k)) * ybar);
-
-    
-    arma::mat S = arma::zeros(arma::size(L_0k));
-    for(int i = 0; i < n_k; ++i){
-      arma::vec y_c = arma::conv_to<arma::vec>::from(y_current.row(i));
-      arma::vec y_ybar = y_c - ybar;
-      S += (y_ybar * arma::trans(y_ybar));
-    }
-    
-    arma::vec ybar_mu0 = arma::conv_to<arma::vec>::from(ybar - mu_0k);
-    arma::mat L_nk = ((lamb_0k * n_k)/(lamb_0k + n_k)) * (ybar_mu0 * arma::trans(ybar_mu0));
-    L_nk += (L_0k + S);
-    
-    arma::mat s_star = L_nk * ((lamb_nk + 1)/((lamb_nk) * (nu_nk - d + 1)));
-    double val_Lnk;
-    double sign_Lnk;
-    bool log_det_Lnk = arma::log_det(val_Lnk, sign_Lnk, L_nk);
-    
-    arma::vec y_mu_n = arma::conv_to<arma::vec>::from(y_i - mu_nk);
-    
-    double base_p = arma::as_scalar(arma::trans(y_mu_n) * arma::inv(s_star) * y_mu_n);
-    base_p *= (1/(nu_nk - d + 1));
-    base_p += 1.0;
-    
-    // Calculate log_allocate prob
-    double log_val = 0.0;
-    log_val += lgamma(0.5 * (nu_nk + 1));
-    log_val -= lgamma(0.5 * (nu_nk - d + 1));
-    log_val -= ((d/2) * log(nu_nk - d + 1));
-    log_val -= ((d/2) * log(pi));
-    log_val -= (0.5 * val_Lnk * sign_Lnk);
-    log_val -= ((0.5 * (nu_nk + 1)) * log(base_p));
-    
-    log_unnorm.row(k).fill(log_val + log(n_k + xi_k));
-
-  }
-  
-  return log_unnorm;
-}
-
-// [[Rcpp::export]]
 arma::vec log_sum_exp(arma::vec log_unnorm_prob){
   
   /* Description: This function will calculate the normalized probability 
@@ -1143,3 +1062,5 @@ arma::mat normal_multi(int K, int K_init, arma::mat y, arma::vec xi,
   
   return clus_assign.t();
 }
+
+// END: ------------------------------------------------------------------------

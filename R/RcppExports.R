@@ -21,10 +21,6 @@ multi_log_marginal <- function(y, mu_0, lambda_0, nu_0, L_0) {
     .Call(`_ClusterNormal_multi_log_marginal`, y, mu_0, lambda_0, nu_0, L_0)
 }
 
-log_allocate_prob_multi <- function(i, current_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus) {
-    .Call(`_ClusterNormal_log_allocate_prob_multi`, i, current_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus)
-}
-
 log_sum_exp <- function(log_unnorm_prob) {
     .Call(`_ClusterNormal_log_sum_exp`, log_unnorm_prob)
 }
