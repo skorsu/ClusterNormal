@@ -277,7 +277,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // normal_uni
-arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi, arma::vec mu_0, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, double a_theta, double b_theta, int sm_iter, int all_iter, int iter_print);
+Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi, arma::vec mu_0, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, double a_theta, double b_theta, int sm_iter, int all_iter, int iter_print);
 RcppExport SEXP _ClusterNormal_normal_uni(SEXP KSEXP, SEXP K_initSEXP, SEXP ySEXP, SEXP xiSEXP, SEXP mu_0SEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP sm_iterSEXP, SEXP all_iterSEXP, SEXP iter_printSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

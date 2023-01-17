@@ -71,14 +71,22 @@ double uni_log_marginal(double y, double a_sigma_K, double b_sigma_K,
    * Output: log(p(yi|a_sigma, b_sigma, lambda, mu_0))
    */
   
-  double log_marginal = 0.0;
-  double denom_base = b_sigma_K + 
-    ((lambda_K/(2 * (lambda_K + 1))) * std::pow(y - mu_0_K, 2.0));
+  // Calculate the posterior parameters
+  double a_n = a_sigma_K + 0.5;
+  double V_n = 1/(lambda_K + 1);
+  double b_n = b_sigma_K + 
+    ((0.5) * (lambda_K/(lambda_K + 1)) * (std::pow(mu_0_K - y, 2.0)));
   
-  log_marginal += (0.5 * log(lambda_K)) - (0.5 * log(lambda_K + 1));
-  log_marginal += lgamma(a_sigma_K + 0.5) - lgamma(a_sigma_K);
+  // Calculate the log marginal
+  double log_marginal = 0.0;
+  log_marginal += (0.5 * log(V_n));
+  log_marginal -= (0.5 * log(1/lambda_K));
   log_marginal += (a_sigma_K * log(b_sigma_K));
-  log_marginal -= (a_sigma_K + 0.5) * log(denom_base);
+  log_marginal -= (a_n * log(b_n));
+  log_marginal += lgamma(a_n);
+  log_marginal -= lgamma(a_sigma_K);
+  log_marginal -= (0.5 * log(pi));
+  log_marginal -= log(2);
 
   return log_marginal;
 }
@@ -101,9 +109,7 @@ double multi_log_marginal(arma::vec y, arma::vec mu_0, double lambda_0,
   double d = y.size();
   double nu_n = nu_0 + 1;
   double lambda_n = lambda_0 + 1;
-  
   arma::vec diff_y_mu = y - mu_0;
-
   arma::mat L_n = L_0 + 
     ((lambda_0/(lambda_0 + 1)) * (diff_y_mu * arma::trans(diff_y_mu)));
 
@@ -198,6 +204,7 @@ int uni_alloc(int i, arma::vec old_assign, arma::vec xi, arma::vec y,
     for(int k = 0; k < K_active; ++k){
       int current_clus = active_clus.at(k);
       arma::uvec S_index = arma::find(c_not_yi == current_clus);
+      arma::vec y_k = y_not_i.rows(S_index);
       
       // Select the hyperparameter that corresponding to the cluster k
       double a_k = a_sigma.at(current_clus - 1);
@@ -208,33 +215,33 @@ int uni_alloc(int i, arma::vec old_assign, arma::vec xi, arma::vec y,
       double n_k = S_index.size();
       
       // Calculate the parameter for the posterior predictive distribution
-      double mean_k = 0.0;
-      double var_k = 0.0;
+      double a_n = a_k;
+      double i_lambda_n = lambda_k;
+      double mu_0n = mu_0k;
+      double b_n = b_k;
       
       if(n_k > 0){
-        mean_k = arma::mean(arma::mean(y_not_i));
-        var_k = arma::var(y_not_i);
+        a_n += (n_k/2);
+        i_lambda_n += n_k;
+        mu_0n = ((lambda_k * mu_0k) + (arma::accu(y_k)))/(lambda_k + n_k);
+        b_n += (0.5 * n_k * arma::var(y_k));
+        double diff_mean_y = mu_0k - arma::mean(arma::mean(y_k));
+        b_n += (0.5 * std::pow(diff_mean_y, 2.0) * ((n_k * lambda_k)/(n_k + lambda_k)));
       }
       
-      double nu = (2*a_k) + n_k;
+      // Calculate the log unnormalized allocation probability
+      double nu = 2 * a_n;
+      double scale_coef = (b_n * (1 + (1/i_lambda_n)))/a_n;
+      double log_t = R::dt((yi - mu_0n)/scale_coef, nu, 1) - log(scale_coef);
       
-      double mu_star = ((n_k * mean_k) + (lambda_k + mu_0k))/(lambda_k + n_k);
-      double sigma2_star = (2 * (lambda_k + n_k + 1))/((lambda_k + n_k) * nu);
-      double b_star = b_k + (0.5 * var_k * (n_k - 1)) + 
-        (0.5 * ((n_k * lambda_k)/(n_k + lambda_k)) * std::pow(mean_k - mu_0k, 2.0));
-      
-      // t-distribution component
-      double base_term = 1 + 
-        ((1/nu) * (1/(sigma2_star * b_star)) * std::pow(yi - mu_star, 2.0));
-      double t = lgamma((nu + 1)/2) - lgamma(nu/2) - (0.5 * log(nu)) - 
-        (0.5 * log(sigma2_star * b_star)) - (((nu + 1)/2) * log(base_term));
-      
-      log_unnorm.row(k).fill(t + log(n_k + xi_k));
-      
+      log_unnorm.row(k).fill(log_t + log(n_k + xi_k));
     }
+    
+    // Rcpp::Rcout << log_unnorm << std::endl;
     
     // Normalized the log_unnorm by applying the log_sum_exp trick
     new_assign = sample_clus(log_sum_exp(log_unnorm), active_clus);
+    arma::vec test_prob = log_sum_exp(log_unnorm);
   }
   
   return new_assign;
@@ -328,6 +335,7 @@ int multi_alloc(int i, arma::vec old_assign, arma::vec xi, arma::mat y,
     
     // Normalized the log_unnorm by applying the log_sum_exp trick
     new_assign = sample_clus(log_sum_exp(log_unnorm), active_clus);
+    
   }
   
   return new_assign;
@@ -906,10 +914,10 @@ arma::vec update_alpha(int K, arma::vec alpha, arma::vec xi,
 // Final Function: -------------------------------------------------------------
 // * Univariate
 // [[Rcpp::export]]
-arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi, 
-                     arma::vec mu_0, arma::vec a_sigma, arma::vec b_sigma, 
-                     arma::vec lambda, double a_theta, double b_theta, 
-                     int sm_iter, int all_iter, int iter_print){
+Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi, 
+                      arma::vec mu_0, arma::vec a_sigma, arma::vec b_sigma, 
+                      arma::vec lambda, double a_theta, double b_theta, 
+                      int sm_iter, int all_iter, int iter_print){
   
   /* This is the function for the univariate case. We assume that our data is 
    * followed the normal distribution. The user requires to specified 
@@ -920,6 +928,8 @@ arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
    * (5) a_theta, b_theta
    * (6) number of iterations. (sm_iter, all_iter)
    */
+  
+  Rcpp::List result;
   
   // K_init should less than or equal to K.
   if(K_init > K){
@@ -941,6 +951,7 @@ arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
   
   // Storing the cluster assignment for each iteration
   arma::mat clus_assign = -1 * arma::ones(old_assign.size(), all_iter);
+  arma::mat alpha_val(alpha_vec.size(), all_iter);
   
   int i = 0;
   while(i < all_iter){
@@ -974,6 +985,7 @@ arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
     
     // Record the cluster assignment
     clus_assign.col(i) = step3_assign;
+    alpha_val.col(i) = step4_alpha;
     
     // Prepare for the next iteration
     i += 1;
@@ -981,7 +993,10 @@ arma::mat normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
     alpha_vec = step4_alpha;
   }
   
-  return clus_assign.t();
+  result["assign"] = clus_assign.t();
+  result["alpha"] = alpha_val.t();
+  
+  return result;
 }
 
 // * Multivariate
