@@ -74,10 +74,8 @@ double uni_log_marginal(double y, double a_sigma_K, double b_sigma_K,
   // Calculate the posterior parameters
   double a_n = a_sigma_K + 0.5;
   double V_n = 1/(lambda_K + 1);
-  double m_n = V_n * (y + (mu_0_K * lambda_K));
-  double b_part = (std::pow(mu_0_K, 2.0) * lambda_K) + std::pow(y, 2.0) -
-    (std::pow(m_n, 2.0)/V_n);
-  double b_n = b_sigma_K + (0.5 * b_part);
+  double b_n = b_sigma_K + 
+    ((0.5) * (lambda_K/(lambda_K + 1)) * (std::pow(mu_0_K - y, 2.0)));
   
   // Calculate the log marginal
   double log_marginal = 0.0;
@@ -111,9 +109,7 @@ double multi_log_marginal(arma::vec y, arma::vec mu_0, double lambda_0,
   double d = y.size();
   double nu_n = nu_0 + 1;
   double lambda_n = lambda_0 + 1;
-  
   arma::vec diff_y_mu = y - mu_0;
-
   arma::mat L_n = L_0 + 
     ((lambda_0/(lambda_0 + 1)) * (diff_y_mu * arma::trans(diff_y_mu)));
 
