@@ -13,6 +13,10 @@ log_multi_lgamma <- function(a, d) {
     .Call(`_ClusterNormal_log_multi_lgamma`, a, d)
 }
 
+ldata_uni <- function(K, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_ldata_uni`, K, y, a_sigma, b_sigma, lambda, mu0)
+}
+
 uni_log_marginal <- function(y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K) {
     .Call(`_ClusterNormal_uni_log_marginal`, y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K)
 }
@@ -35,6 +39,10 @@ multi_alloc <- function(i, old_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_
 
 rdirichlet_cpp <- function(num_samples, alpha_m) {
     .Call(`_ClusterNormal_rdirichlet_cpp`, num_samples, alpha_m)
+}
+
+uni_expand <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, l_data, a_theta, b_theta) {
+    .Call(`_ClusterNormal_uni_expand`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, l_data, a_theta, b_theta)
 }
 
 uni_expand_step <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta) {
