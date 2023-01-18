@@ -61,6 +61,28 @@ double log_multi_lgamma(double a, double d){
 }
 
 // [[Rcpp::export]]
+arma::mat uni_lmar(int K, arma::vec y, arma::vec a_sigma, arma::vec b_sigma,
+                   arma::vec lambda_k, arma::vec mu_0){
+  arma::mat log_mar(y.size(), K);
+  
+  // Calculate the posterior parameters
+  arma::vec V_n = 1/(lambda_k + 1);
+  arma::vec a_n = a_sigma + 0.5;
+  
+  arma::vec lmar_y = arma::lgamma(a_n) - arma::lgamma(a_sigma) +
+    (0.5 * arma::log(V_n)) - (0.5 * arma::log(1/lambda_k)) -
+    (0.5 * log(2 * pi) * arma::ones(K)) + (a_sigma % arma::log(b_sigma));
+  
+  for(int i = 0; i < y.size(); ++i){
+    arma::vec yi_mu0 = arma::pow((y.at(i) * arma::ones(K)) - mu_0, 2.0);
+    arma::vec b_n = b_sigma + (0.5 * (lambda_k % (1/(lambda_k + 1)) % yi_mu0));
+    log_mar.row(i) = (lmar_y - (a_n % arma::log(b_n))).t();
+  }
+  
+  return log_mar;
+}
+
+// [[Rcpp::export]]
 double uni_log_marginal(double y, double a_sigma_K, double b_sigma_K,
                         double lambda_K, double mu_0_K){
   
@@ -237,8 +259,6 @@ int uni_alloc(int i, arma::vec old_assign, arma::vec xi, arma::vec y,
       log_unnorm.row(k).fill(log_t + log(n_k + xi_k));
     }
     
-    // Rcpp::Rcout << log_unnorm << std::endl;
-    
     // Normalized the log_unnorm by applying the log_sum_exp trick
     new_assign = sample_clus(log_sum_exp(log_unnorm), active_clus);
     arma::vec test_prob = log_sum_exp(log_unnorm);
@@ -369,7 +389,8 @@ arma::mat rdirichlet_cpp(int num_samples, arma::vec alpha_m){
 
 // Step 1: Update the cluster space: -------------------------------------------
 // * Univariate
-// [[Rcpp::export]]
+
+/*
 Rcpp::List uni_expand_step(int K, arma::vec old_assign, arma::vec alpha,
                            arma::vec xi, arma::vec y, arma::vec mu_0,
                            arma::vec a_sigma, arma::vec b_sigma, 
@@ -425,6 +446,59 @@ Rcpp::List uni_expand_step(int K, arma::vec old_assign, arma::vec alpha,
   
   return result;
 }
+*/
+
+// [[Rcpp::export]]
+Rcpp::List uni_expand(int K, arma::vec old_assign, arma::vec alpha,
+                      arma::vec xi, arma::vec y, arma::mat ldata, 
+                      double a_theta, double b_theta){
+  
+  Rcpp::List result;
+  
+  // Indicate the existed clusters and inactive clusters
+  Rcpp::List List_clusters = active_inactive(K, old_assign);
+  arma::uvec inactive_clus = List_clusters["inactive"];
+  arma::uvec active_clus = List_clusters["active"];
+  
+  arma::vec new_alpha(K);
+  arma::vec new_assign(y.size());
+  
+  if(active_clus.size() == K){
+    new_alpha = alpha;
+    new_assign = old_assign;
+  } else {
+    // Select a candidate cluster
+    arma::vec samp_prob = arma::ones(inactive_clus.size())/inactive_clus.size();
+    int candidate_clus = sample_clus(samp_prob, inactive_clus);
+    
+    // Sample alpha for new active cluster
+    double alpha_k = 
+      arma::as_scalar(arma::randg(1, arma::distr_param(xi.at(candidate_clus - 1), 1.0)));
+    double sum_alpha = arma::sum(alpha);
+    double sum_alpha_k = sum_alpha + alpha_k;
+    
+    for(int i = 0; i < y.size(); ++i){
+      int cc = old_assign.at(i);
+      arma::rowvec ldata_y = ldata.row(i);
+      double log_a = std::min(0.0, ldata_y.at(candidate_clus - 1) - ldata_y.at(cc - 1) +
+        log(alpha_k) - log(alpha.at(cc - 1)) + log(sum_alpha) - log(sum_alpha_k) +
+        log(a_theta) - log(b_theta));
+      double log_u = log(arma::randu());
+      if(log_u <= log_a){
+        old_assign.row(i).fill(candidate_clus);
+      }
+    }
+    
+    new_assign = old_assign;
+    alpha.row(candidate_clus - 1).fill(alpha_k);
+    new_alpha = adjust_alpha(K, new_assign, alpha);
+  }
+  
+  result["new_alpha"] = new_alpha;
+  result["new_assign"] = new_assign;
+  
+  return result;
+}
 
 // * Multivariate
 // [[Rcpp::export]]
@@ -469,7 +543,7 @@ Rcpp::List multi_expand_step(int K, arma::vec old_assign, arma::vec alpha,
       log_prob -= multi_log_marginal(yi, mu_0_old, lambda_0.at(old_assign.at(i) - 1), 
                                      nu_0.at(old_assign.at(i) - 1), 
                                      L_0.slice(old_assign.at(i) - 1));
-
+      
       double log_A = std::min(log_prob, 0.0);
       double log_U = std::log(arma::randu());
       if(log_U <= log_A){
@@ -953,6 +1027,10 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
   arma::mat clus_assign = -1 * arma::ones(old_assign.size(), all_iter);
   arma::mat alpha_val(alpha_vec.size(), all_iter);
   
+  // Calculate the log marginal of the data for each observations and each clusters
+  arma::mat log_data = uni_lmar(K, y, a_sigma, b_sigma, lambda, mu_0);
+  result["log_data"] = log_data;
+  
   int i = 0;
   while(i < all_iter){
     
@@ -961,9 +1039,8 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
     }
     
     // Step 1: Expand
-    Rcpp::List step1 = uni_expand_step(K, old_assign, alpha_vec, xi, y, mu_0, 
-                                       a_sigma, b_sigma, lambda, a_theta, 
-                                       b_theta);
+    Rcpp::List step1 = uni_expand(K, old_assign, alpha_vec, xi, y, log_data, 
+                                  a_theta, b_theta);
     arma::vec step1_assign = step1["new_assign"];
     arma::vec step1_alpha = step1["new_alpha"];
     
