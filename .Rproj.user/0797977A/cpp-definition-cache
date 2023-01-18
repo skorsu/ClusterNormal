@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-        "file_last_write": 1673765855.0,
+        "file_last_write": 1673986689.0,
         "definitions": [
             {
                 "usr": "c:@F@active_inactive#I#$@N@arma@S@Col>#d#",
@@ -49,7 +49,7 @@
                 "parent_name": "",
                 "name": "multi_log_marginal(arma::vec, arma::vec, double, double, arma::mat)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 97,
+                "line": 95,
                 "column": 8,
                 "hidden": false
             },
@@ -59,7 +59,7 @@
                 "parent_name": "",
                 "name": "log_sum_exp(arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 142,
+                "line": 138,
                 "column": 11,
                 "hidden": false
             },
@@ -69,7 +69,7 @@
                 "parent_name": "",
                 "name": "adjust_alpha(int, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 167,
+                "line": 163,
                 "column": 11,
                 "hidden": false
             },
@@ -79,7 +79,7 @@
                 "parent_name": "",
                 "name": "uni_alloc(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::uvec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 184,
+                "line": 180,
                 "column": 5,
                 "hidden": false
             },
@@ -89,7 +89,7 @@
                 "parent_name": "",
                 "name": "multi_alloc(int, arma::vec, arma::vec, arma::mat, arma::mat, arma::vec, arma::vec, arma::cube, arma::uvec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 255,
+                "line": 251,
                 "column": 5,
                 "hidden": false
             },
@@ -99,7 +99,7 @@
                 "parent_name": "",
                 "name": "rdirichlet_cpp(int, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 348,
+                "line": 345,
                 "column": 11,
                 "hidden": false
             },
@@ -109,7 +109,7 @@
                 "parent_name": "",
                 "name": "uni_expand_step(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 376,
+                "line": 373,
                 "column": 12,
                 "hidden": false
             },
@@ -119,7 +119,7 @@
                 "parent_name": "",
                 "name": "multi_expand_step(int, arma::vec, arma::vec, arma::vec, arma::mat, arma::mat, arma::vec, arma::vec, arma::cube, double, double)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 434,
+                "line": 431,
                 "column": 12,
                 "hidden": false
             },
@@ -129,7 +129,7 @@
                 "parent_name": "",
                 "name": "uni_cluster_assign(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 499,
+                "line": 496,
                 "column": 12,
                 "hidden": false
             },
@@ -139,7 +139,7 @@
                 "parent_name": "",
                 "name": "multi_cluster_assign(int, arma::vec, arma::vec, arma::mat, arma::vec, arma::mat, arma::vec, arma::vec, arma::cube)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 526,
+                "line": 523,
                 "column": 12,
                 "hidden": false
             },
@@ -149,7 +149,7 @@
                 "parent_name": "",
                 "name": "uni_split_merge(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 555,
+                "line": 552,
                 "column": 12,
                 "hidden": false
             },
@@ -159,7 +159,7 @@
                 "parent_name": "",
                 "name": "multi_split_merge(int, arma::vec, arma::vec, arma::vec, arma::mat, arma::mat, arma::vec, arma::vec, arma::cube, double, double, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 720,
+                "line": 717,
                 "column": 12,
                 "hidden": false
             },
@@ -169,7 +169,7 @@
                 "parent_name": "",
                 "name": "update_alpha(int, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 885,
+                "line": 882,
                 "column": 11,
                 "hidden": false
             },
@@ -179,8 +179,8 @@
                 "parent_name": "",
                 "name": "normal_uni(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int, int, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 920,
-                "column": 11,
+                "line": 917,
+                "column": 12,
                 "hidden": false
             },
             {
@@ -189,7 +189,7 @@
                 "parent_name": "",
                 "name": "normal_multi(int, int, arma::mat, arma::vec, arma::mat, arma::vec, arma::vec, arma::cube, double, double, int, int, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 1000,
+                "line": 1004,
                 "column": 11,
                 "hidden": false
             }
