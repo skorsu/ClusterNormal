@@ -985,6 +985,146 @@ arma::vec update_alpha(int K, arma::vec alpha, arma::vec xi,
   return new_alpha;
 }
 
+// SPMM: -----------------------------------------------------------------------
+// [[Rcpp::export]]
+int SPMM_uni_alloc(int i, arma::vec old_assign, arma::vec xi, arma::vec y, 
+                   arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, 
+                   arma::vec mu_0, arma::uvec active_clus){
+  
+  int new_assign;
+  
+  // Retrieve the active cluster
+  int K_active = active_clus.size();
+  
+  double yi = y.at(i);
+  arma::vec y_not_i = y;
+  y.shed_row(i);
+  arma::vec c_not_yi = old_assign;
+  c_not_yi.shed_row(i);
+    
+  // Create a vector for storing a log unnormaolized probability
+  arma::vec log_unnorm(K_active);
+  
+  for(int k = 0; k < K_active; ++k){
+    
+    int current_clus = active_clus.at(k);
+    arma::uvec S_index = arma::find(c_not_yi == current_clus);
+    arma::vec y_k = y_not_i.rows(S_index);
+      
+    // Select the hyperparameter that corresponding to the cluster k
+    double a_k = a_sigma.at(current_clus - 1);
+    double b_k = b_sigma.at(current_clus - 1);
+    double lambda_k = lambda.at(current_clus - 1); 
+    double mu_0k = mu_0.at(current_clus - 1);
+    double xi_k = xi.at(current_clus- 1);
+    double n_k = S_index.size();
+      
+    // Calculate the parameter for the posterior predictive distribution
+    double a_n = a_k;
+    double i_lambda_n = lambda_k;
+    double mu_0n = mu_0k;
+    double b_n = b_k;
+      
+    if(n_k > 0){
+      a_n += (n_k/2);
+      i_lambda_n += n_k;
+      mu_0n = ((lambda_k * mu_0k) + (arma::accu(y_k)))/(lambda_k + n_k);
+      b_n += (0.5 * n_k * arma::var(y_k));
+      double diff_mean_y = mu_0k - arma::mean(arma::mean(y_k));
+      b_n += (0.5 * std::pow(diff_mean_y, 2.0) * ((n_k * lambda_k)/(n_k + lambda_k)));
+    }
+      
+    // Calculate the log unnormalized allocation probability
+    double nu = 2 * a_n;
+    double scale_coef = (b_n * (1 + (1/i_lambda_n)))/a_n;
+    double log_t = R::dt((yi - mu_0n)/scale_coef, nu, 1) - log(scale_coef);
+      
+    log_unnorm.row(k).fill(log_t + log(n_k + xi_k));
+  }
+  
+  // Normalized the log_unnorm by applying the log_sum_exp trick
+  new_assign = sample_clus(log_sum_exp(log_unnorm), active_clus);
+  arma::vec test_prob = log_sum_exp(log_unnorm);
+  
+  return new_assign;
+}
+
+// * Univariate
+// [[Rcpp::export]]
+arma::vec SPMM_uni_cluster_assign(int K, arma::vec old_assign, arma::vec xi, 
+                                  arma::vec y, arma::vec mu_0, arma::vec a_sigma, 
+                                  arma::vec b_sigma, arma::vec lambda){
+  
+  // Indicate the active clusters.
+  arma::uvec active_clus = arma::conv_to<arma::uvec>::from(arma::linspace(1, K, K));
+
+  // Assign a new assignment
+  for(int i = 0; i < old_assign.size(); ++i){
+    int new_c = SPMM_uni_alloc(i, old_assign, xi, y, a_sigma, b_sigma, lambda, 
+                               mu_0, active_clus);
+    old_assign.row(i).fill(new_c);
+  }
+  
+  return old_assign;
+}
+
+// * Univariate
+// [[Rcpp::export]]
+Rcpp::List normal_SPMM_uni(arma::vec y, arma::vec xi, arma::vec mu_0, 
+                           arma::vec a_sigma, arma::vec b_sigma, 
+                           arma::vec lambda, int all_iter, int iter_print){
+  Rcpp::List result;
+  
+  int K = xi.size(); // maximum possible cluster
+  
+  // Initialize the cluster weight
+  arma::vec alpha_vec(K);
+  for(int i = 0; i < K; ++i){
+    alpha_vec.row(i).fill(R::rgamma(xi.at(i), 1.0));
+  }
+  
+  // Initial the cluster assignment
+  arma::vec old_assign = arma::conv_to<arma::vec>::
+    from(arma::randi(y.size(), arma::distr_param(1, K)));
+  
+  // Storing the cluster assignment for each iteration
+  arma::mat clus_assign = -1 * arma::ones(old_assign.size(), all_iter);
+  arma::mat alpha_val(alpha_vec.size(), all_iter);
+  
+  // Calculate the log marginal of the data for each observations and each clusters
+  arma::mat log_data = uni_lmar(K, y, a_sigma, b_sigma, lambda, mu_0);
+  
+  int i = 0;
+  while(i < all_iter){
+    
+    if((i+1) % iter_print == 0){
+      Rcpp::Rcout << (i+1) << std::endl;
+    }
+
+    // Step 1: Reassign
+    arma::vec step1_assign = SPMM_uni_cluster_assign(K, old_assign, xi, y, 
+                                                     mu_0, a_sigma, b_sigma, lambda);
+
+    // Step 2: Update alpha
+    arma::vec step2_alpha = update_alpha(K, alpha_vec, xi, step1_assign);
+    
+    // Record the cluster assignment
+    clus_assign.col(i) = step1_assign;
+    alpha_val.col(i) = step2_alpha;
+    
+    // Prepare for the next iteration
+    i += 1;
+    old_assign = step1_assign;
+    alpha_vec = step2_alpha;
+  }
+  
+  result["log_data"] = log_data;
+  result["assign"] = clus_assign.t();
+  result["alpha"] = alpha_val.t();
+  
+  return result;
+}
+
 // Final Function: -------------------------------------------------------------
 // * Univariate
 // [[Rcpp::export]]
@@ -1154,5 +1294,7 @@ arma::mat normal_multi(int K, int K_init, arma::mat y, arma::vec xi,
   
   return clus_assign.t();
 }
+
+
 
 // END: ------------------------------------------------------------------------
