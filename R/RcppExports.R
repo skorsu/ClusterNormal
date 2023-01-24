@@ -69,6 +69,18 @@ update_alpha <- function(K, alpha, xi, old_assign) {
     .Call(`_ClusterNormal_update_alpha`, K, alpha, xi, old_assign)
 }
 
+SPMM_uni_alloc <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus) {
+    .Call(`_ClusterNormal_SPMM_uni_alloc`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus)
+}
+
+SPMM_uni_cluster_assign <- function(K, old_assign, xi, y, mu_0, a_sigma, b_sigma, lambda) {
+    .Call(`_ClusterNormal_SPMM_uni_cluster_assign`, K, old_assign, xi, y, mu_0, a_sigma, b_sigma, lambda)
+}
+
+normal_SPMM_uni <- function(y, xi, mu_0, a_sigma, b_sigma, lambda, all_iter, iter_print) {
+    .Call(`_ClusterNormal_normal_SPMM_uni`, y, xi, mu_0, a_sigma, b_sigma, lambda, all_iter, iter_print)
+}
+
 normal_uni <- function(K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print) {
     .Call(`_ClusterNormal_normal_uni`, K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print)
 }
