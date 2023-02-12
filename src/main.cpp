@@ -389,71 +389,13 @@ arma::mat rdirichlet_cpp(int num_samples, arma::vec alpha_m){
 
 // Step 1: Update the cluster space: -------------------------------------------
 // * Univariate
-
-/*
-Rcpp::List uni_expand_step(int K, arma::vec old_assign, arma::vec alpha,
-                           arma::vec xi, arma::vec y, arma::vec mu_0,
-                           arma::vec a_sigma, arma::vec b_sigma, 
-                           arma::vec lambda, double a_theta, double b_theta){
-  Rcpp::List result;
-  
-  // Indicate the existed clusters and inactive clusters
-  Rcpp::List List_clusters = active_inactive(K, old_assign);
-  arma::uvec inactive_clus = List_clusters["inactive"];
-  arma::uvec active_clus = List_clusters["active"];
-  
-  if(active_clus.size() < K){
-    // Select a candidate cluster
-    arma::vec samp_prob = arma::ones(inactive_clus.size())/inactive_clus.size();
-    int candidate_clus = sample_clus(samp_prob, inactive_clus);
-    
-    // Sample alpha for new active cluster
-    alpha.row(candidate_clus - 1).fill(R::rgamma(xi.at(candidate_clus - 1), 1));
-    
-    // Calculate the log of acceptance probability and assign a new cluster
-    arma::vec log_accept_prob = std::log(alpha.at(candidate_clus - 1)) + 
-      std::log((sum(alpha) - alpha.at(candidate_clus - 1))) + 
-      std::log(a_theta) - arma::log(alpha) - std::log(sum(alpha)) -
-      std::log(b_theta);
-    
-    arma::vec new_assign = old_assign;
-    for(int i = 0; i < old_assign.size(); ++i){
-      double log_prob = log_accept_prob.at(old_assign.at(i) - 1) +
-        uni_log_marginal(y.at(i), a_sigma.at(candidate_clus - 1), 
-                                b_sigma.at(candidate_clus - 1),
-                                lambda.at(candidate_clus - 1), 
-                                mu_0.at(candidate_clus - 1)) -
-        uni_log_marginal(y.at(i), a_sigma.at(old_assign.at(i) - 1), 
-                                b_sigma.at(old_assign.at(i) - 1),
-                                lambda.at(old_assign.at(i) - 1), 
-                                mu_0.at(old_assign.at(i) - 1));
-      double log_A = std::min(log_prob, 0.0);
-      double log_U = std::log(arma::randu());
-      if(log_U <= log_A){
-        new_assign.row(i).fill(candidate_clus);
-      }
-    }
-    
-    // Adjust an alpha vector
-    arma::vec new_alpha = adjust_alpha(K, new_assign, alpha);
-    
-    result["new_alpha"] = new_alpha;
-    result["new_assign"] = new_assign;
-  } else {
-    result["new_alpha"] = alpha;
-    result["new_assign"] = old_assign;
-  }
-  
-  return result;
-}
-*/
-
 // [[Rcpp::export]]
 Rcpp::List uni_expand(int K, arma::vec old_assign, arma::vec alpha,
                       arma::vec xi, arma::vec y, arma::mat ldata, 
                       double a_theta, double b_theta){
   
   Rcpp::List result;
+  double accept_iter = 0.0;
   
   // Indicate the existed clusters and inactive clusters
   Rcpp::List List_clusters = active_inactive(K, old_assign);
@@ -485,6 +427,7 @@ Rcpp::List uni_expand(int K, arma::vec old_assign, arma::vec alpha,
         log(a_theta) - log(b_theta));
       double log_u = log(arma::randu());
       if(log_u <= log_a){
+        accept_iter += 1.0;
         old_assign.row(i).fill(candidate_clus);
       }
     }
@@ -494,6 +437,7 @@ Rcpp::List uni_expand(int K, arma::vec old_assign, arma::vec alpha,
     new_alpha = adjust_alpha(K, new_assign, alpha);
   }
   
+  result["accept_prob"] = accept_iter/y.size();
   result["new_alpha"] = new_alpha;
   result["new_assign"] = new_assign;
   
@@ -629,6 +573,7 @@ Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,
                            arma::vec lambda, double a_theta, double b_theta, 
                            int sm_iter){
   Rcpp::List result;
+  int accept_iter = 1;
   
   // Initial the alpha vector and assignment vector
   arma::vec launch_assign = old_assign;
@@ -778,8 +723,10 @@ Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,
   if(log_u >= log_A){
     new_assign = launch_assign;
     new_alpha = launch_alpha_vec;
+    accept_iter -= 1;
   }
   
+  result["accept_prob"] = accept_iter;
   result["new_assign"] = new_assign;
   result["new_alpha"] = new_alpha;
   
@@ -1169,7 +1116,10 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
   
   // Calculate the log marginal of the data for each observations and each clusters
   arma::mat log_data = uni_lmar(K, y, a_sigma, b_sigma, lambda, mu_0);
-  result["log_data"] = log_data;
+  
+  // Accept prob for CE ad SM step
+  arma::vec CE_accept(all_iter);
+  arma::vec SM_accept(all_iter);
   
   int i = 0;
   while(i < all_iter){
@@ -1183,6 +1133,7 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
                                   a_theta, b_theta);
     arma::vec step1_assign = step1["new_assign"];
     arma::vec step1_alpha = step1["new_alpha"];
+    CE_accept.row(i).fill(step1["accept_prob"]);
     
     // Step 2: Reassign
     Rcpp::List step2 = uni_cluster_assign(K, step1_assign, xi, y, step1_alpha, 
@@ -1196,6 +1147,7 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
                                        b_theta, sm_iter);
     arma::vec step3_assign = step3["new_assign"];
     arma::vec step3_alpha = step3["new_alpha"];
+    SM_accept.row(i).fill(step3["accept_prob"]);
     
     // Step 4: Update alpha
     arma::vec step4_alpha = update_alpha(K, step3_alpha, xi, step3_assign);
@@ -1212,6 +1164,8 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
   
   result["assign"] = clus_assign.t();
   result["alpha"] = alpha_val.t();
+  result["CE_accept"] = CE_accept;
+  result["SM_accept"] = SM_accept;
   
   return result;
 }
