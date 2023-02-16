@@ -1,66 +1,3 @@
-set.seed(20882)
-data_test <- c(rnorm(250, -10, 1), rnorm(250, 10, 0.1), rnorm(250, 0, 1))
-ci_actual <- factor(sort(rep(1:3, 100)))
-data.frame(x = data_test, ci_actual) %>%
-ggplot(aes(x = x, fill = ci_actual)) +
-geom_histogram(bins = 30, alpha = 0.75) +
-theme_bw()
-rm(list = ls())
-## Data Simulation
-set.seed(20882)
-data_test <- c(rnorm(250, -10, 1), rnorm(250, 10, 0.1), rnorm(250, 0, 1))
-ci_actual <- factor(sort(rep(1:3, 250)))
-data.frame(x = data_test, ci_actual) %>%
-ggplot(aes(x = x, fill = ci_actual)) +
-geom_histogram(bins = 30, alpha = 0.75) +
-theme_bw()
-## Analysis
-K <- 10
-K_init <- 5
-xi <- rep(10, K)
-mu0_vec <- rep(0, K)
-a_sigma_vec <- rep(100, K)
-b_sigma_vec <- rep(100, K)
-lambda_vec <- rep(1, K)
-start_time <- Sys.time()
-result <- normal_uni(K, K_init, data_test, xi, mu0_vec, a_sigma_vec,
-b_sigma_vec, lambda_vec, 10, 10, 10, 10000, 1000)
-Sys.time() - start_time
-table(ci_actual, summary(salso(result$assign[-(1:2000), ]))$estimate)
-## Analysis
-K <- 10
-K_init <- 5
-xi <- rep(10, K)
-mu0_vec <- rep(0, K)
-a_sigma_vec <- rep(500, K)
-b_sigma_vec <- rep(500, K)
-lambda_vec <- rep(1, K)
-start_time <- Sys.time()
-result <- normal_uni(K, K_init, data_test, xi, mu0_vec, a_sigma_vec,
-b_sigma_vec, lambda_vec, 10, 10, 10, 10000, 1000)
-Sys.time() - start_time
-table(ci_actual, summary(salso(result$assign[-(1:2000), ]))$estimate)
-install.packages("msBP")
-library(msBP)
-data("galaxy")
-galaxy
-data("galaxy")
-galaxy
-rm(list = ls())
-data("galaxy")
-galaxy
-## Analysis
-K <- 10
-K_init <- 5
-xi <- rep(10, K)
-mu0_vec <- rep(0, K)
-a_sigma_vec <- rep(50, K)
-b_sigma_vec <- rep(50, K)
-lambda_vec <- rep(1, K)
-start_time <- Sys.time()
-result <- normal_uni(K, K_init, galaxy, xi, mu0_vec, a_sigma_vec,
-b_sigma_vec, lambda_vec, 10, 10, 10, 10000, 1000)
-galaxy
 rm(list = ls())
 data("galaxy")
 galaxy
@@ -467,46 +404,109 @@ compileAttributes()
 build()
 install()
 library(ClusterNormal)
-getwd()
-getwd()
-library(doParallel)
-registerDoParallel(detectCores() - 1)
-foreach(t = 1:30) %dopar%
-{
-rnorm(500)
-}
-stopImplicitCluster()
-getwd()
-library(doParallel)
-path <- getwd()
-dir.create(paste0(path, "/data"))
-path <- paste0(path, "/data")
-registerDoParallel(detectCores() - 1)
-set.seed(31807, kind = "L'Ecuyer-CMRG")
-foreach(t = 1:5) %dopar%
-{
-dat <- rnorm(500)
-save(dat, file = paste0(path, "/dat", t, ".RData"))
-}
-stopImplicitCluster()
-### Call the library
-library(ClusterNormal)
-library(doParallel)
+### Required Library: ----------------------------------------------------------
+library(Rcpp)
+library(RcppArmadillo)
+library(devtools)
+library(LaplacesDemon)
+library(mvtnorm)
+library(DirichletReg)
 library(salso)
-library(mclustcomp)
-### Create global path name
-path_data <- paste0(getwd(), "/Data/")
-path_result <- paste0(getwd(), "/Result/")
-if(dir.exists(path_result)){
-unlink(path_result, recursive = TRUE)
-}
-dir.create(path_result)
-path_aa <- paste0(path_result, "Active_Accept/")
-path_clus <- paste0(path_result, "Cluster_Assign/")
-path_conf_mat <- paste0(path_result, "Conf_Mat/")
-path_sum <- paste0(path_result, "Summary/")
-dir.create(path_aa)
-dir.create(path_clus)
-dir.create(path_conf_mat)
-dir.create(path_sum)
-path_data
+uninstall()
+compileAttributes()
+build()
+install()
+library(ClusterNormal)
+uninstall()
+compileAttributes()
+build()
+install()
+library(ClusterNormal)
+## Data Simulation
+set.seed(20882)
+data_test <- c(rnorm(3, -5, 1), rnorm(2, 10, 1))
+set.seed(20882)
+data_test <- c(rnorm(3, -5, 1), rnorm(2, 10, 1))
+## Analysis
+K <- 5
+K_init <- 3
+xi <- rep(1, K)
+mu0_vec <- 1:5 * 10
+a_sigma_vec <- 1:5 / 100
+b_sigma_vec <- 1:5 * 10
+lambda_vec <- 25:29
+ldata_mat <- uni_lmar(K, data_test, a_sigma_vec,
+b_sigma_vec, lambda_vec, mu0_vec)
+ldata_mat
+uni_expand(K, c(1,1,1,2,2), rep(1, 5), xi, data_test, ldata_mat, 1, 1)
+uni_expand(K, c(1,1,1,2,2), rep(1, 5), xi, data_test, ldata_mat, 1, 1)
+uni_expand(K, c(1,1,1,2,2), rep(1, 5), xi, data_test, ldata_mat, 1, 1)
+uni_expand(K, c(1,1,1,2,2), rep(1, 5), xi, data_test, ldata_mat, 1, 1)
+uninstall()
+compileAttributes()
+build()
+install()
+library(ClusterNormal)
+uni_expand(K, c(1,1,1,2,2), rep(1, 5), xi, data_test, ldata_mat, 1, 1)
+(K, c(1,1,1,2,2), rep(1, 5), xi, data_test, ldata_mat, 1, 1)
+uninstall()
+compileAttributes()
+build()
+install()
+library(ClusterNormal)
+knitr::opts_chunk$set(echo = TRUE)
+library(Rcpp)
+library(RcppArmadillo)
+library(devtools)
+library(LaplacesDemon)
+library(salso)
+library(tidyverse)
+library(ggplot2)
+library(mvtnorm)
+library(msBP)
+library(ClusterNormal)
+rm(list = ls())
+## Data Simulation
+set.seed(20882)
+data_test <- c(rnorm(250, -10, 1), rnorm(250, 10, 1))
+data.frame(x = data_test, y = c(rep(1, 250), rep(2, 250))) %>%
+ggplot(aes(x = x, fill = factor(y))) +
+geom_histogram(bins = 30) +
+theme_bw()
+## Analysis
+K <- 10
+K_init <- 1
+xi <- rep(1, K)
+mu0_vec <- rep(0, K)
+a_sigma_vec <- rep(500, K)
+b_sigma_vec <- rep(250, K)
+lambda_vec <- rep(1, K)
+start_time <- Sys.time()
+result <- normal_uni(K, K_init, data_test, xi, mu0_vec, a_sigma_vec,
+b_sigma_vec, lambda_vec, 1, 1, 10, 10000, 1000)
+uninstall()
+compileAttributes()
+build()
+install()
+library(ClusterNormal)
+rm(list = ls())
+set.seed(20882)
+data_test <- c(rnorm(250, -10, 1), rnorm(250, 10, 1))
+K <- 10
+K_init <- 1
+xi <- rep(1, K)
+mu0_vec <- rep(0, K)
+a_sigma_vec <- rep(500, K)
+b_sigma_vec <- rep(250, K)
+lambda_vec <- rep(1, K)
+start_time <- Sys.time()
+result <- normal_uni(K, K_init, data_test, xi, mu0_vec, a_sigma_vec,
+b_sigma_vec, lambda_vec, 1, 1, 10, 10000, 1000)
+Sys.time() - start_time
+result
+result$CE_accept
+mean(result$CE_accept)
+mean(result$SM_accept)
+mean(result$CE_accept)
+mean(result$SM_accept)
+print("Hello World!")

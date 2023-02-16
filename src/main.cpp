@@ -574,6 +574,9 @@ Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,
                            int sm_iter){
   Rcpp::List result;
   int accept_iter = 1;
+  int split_i = 0;
+  int split_k = 0;
+  int merge_i = 0;
   
   // Initial the alpha vector and assignment vector
   arma::vec launch_assign = old_assign;
@@ -658,10 +661,11 @@ Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,
     // merge these two clusters into c_j cluster
     sm_indicator = 1.0;
     new_assign.elem(s_index).fill(c_j);
+    merge_i += 1;
   } else if((c_i == c_j) and (active_sm.size() != K)) { 
     // split in case that at least one cluster is inactive.
     sm_indicator = -1.0;
-    
+    split_i += 1;
     // sample a new inactive cluster
     arma::vec prob_inactive = arma::ones(inactive_sm.size())/inactive_sm.size();
     c_i = sample_clus(prob_inactive, inactive_sm);
@@ -679,6 +683,7 @@ Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,
     }
   } else {
     // Rcpp::Rcout << "final: split (none inactive)" << std::endl;
+    split_k += 1;
   }
   
   arma::vec new_alpha = adjust_alpha(K, new_assign, launch_alpha);
@@ -727,6 +732,9 @@ Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,
   }
   
   result["accept_prob"] = accept_iter;
+  result["split"] = split_i;
+  result["split_k"] = split_k;
+  result["merge"] = merge_i;
   result["new_assign"] = new_assign;
   result["new_alpha"] = new_alpha;
   
@@ -845,6 +853,7 @@ Rcpp::List multi_split_merge(int K, arma::vec old_assign, arma::vec alpha,
       }
     }
   } else {
+    
     // Rcpp::Rcout << "final: split (none inactive)" << std::endl;
   }
   arma::vec new_alpha = adjust_alpha(K, new_assign, launch_alpha);
@@ -1117,8 +1126,10 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
   // Calculate the log marginal of the data for each observations and each clusters
   arma::mat log_data = uni_lmar(K, y, a_sigma, b_sigma, lambda, mu_0);
   
-  // Accept prob for CE ad SM step
-  arma::vec CE_accept(all_iter);
+  // Accept prob for SM step
+  arma::vec SM_split(all_iter);
+  arma::vec SM_split_k(all_iter);
+  arma::vec SM_merge(all_iter);
   arma::vec SM_accept(all_iter);
   
   int i = 0;
@@ -1128,15 +1139,8 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
       Rcpp::Rcout << (i+1) << std::endl;
     }
     
-    // Step 1: Expand
-    Rcpp::List step1 = uni_expand(K, old_assign, alpha_vec, xi, y, log_data, 
-                                  a_theta, b_theta);
-    arma::vec step1_assign = step1["new_assign"];
-    arma::vec step1_alpha = step1["new_alpha"];
-    CE_accept.row(i).fill(step1["accept_prob"]);
-    
     // Step 2: Reassign
-    Rcpp::List step2 = uni_cluster_assign(K, step1_assign, xi, y, step1_alpha, 
+    Rcpp::List step2 = uni_cluster_assign(K, old_assign, xi, y, alpha_vec, 
                                           mu_0, a_sigma, b_sigma, lambda);
     arma::vec step2_assign = step2["new_assign"];
     arma::vec step2_alpha = step2["new_alpha"];
@@ -1148,6 +1152,9 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
     arma::vec step3_assign = step3["new_assign"];
     arma::vec step3_alpha = step3["new_alpha"];
     SM_accept.row(i).fill(step3["accept_prob"]);
+    SM_split.row(i).fill(step3["split"]);
+    SM_split_k.row(i).fill(step3["split_k"]);
+    SM_merge.row(i).fill(step3["merge"]);
     
     // Step 4: Update alpha
     arma::vec step4_alpha = update_alpha(K, step3_alpha, xi, step3_assign);
@@ -1164,8 +1171,10 @@ Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi,
   
   result["assign"] = clus_assign.t();
   result["alpha"] = alpha_val.t();
-  result["CE_accept"] = CE_accept;
   result["SM_accept"] = SM_accept;
+  result["Split"] = SM_split;
+  result["Split_k"] = SM_split_k;
+  result["Merge"] = SM_merge;
   
   return result;
 }
