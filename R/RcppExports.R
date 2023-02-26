@@ -57,6 +57,10 @@ multi_cluster_assign <- function(K, old_assign, xi, y, alpha, mu_0, lambda_0, nu
     .Call(`_ClusterNormal_multi_cluster_assign`, K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0)
 }
 
+uni_split_merge_new <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
+    .Call(`_ClusterNormal_uni_split_merge_new`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
+}
+
 uni_split_merge <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
     .Call(`_ClusterNormal_uni_split_merge`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
 }
@@ -79,6 +83,10 @@ SPMM_uni_cluster_assign <- function(K, old_assign, xi, y, mu_0, a_sigma, b_sigma
 
 normal_SPMM_uni <- function(y, xi, mu_0, a_sigma, b_sigma, lambda, all_iter, iter_print) {
     .Call(`_ClusterNormal_normal_SPMM_uni`, y, xi, mu_0, a_sigma, b_sigma, lambda, all_iter, iter_print)
+}
+
+normal_uni_new <- function(K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print) {
+    .Call(`_ClusterNormal_normal_uni_new`, K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print)
 }
 
 normal_uni <- function(K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print) {

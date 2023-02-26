@@ -565,7 +565,153 @@ Rcpp::List multi_cluster_assign(int K, arma::vec old_assign, arma::vec xi,
 }
 
 // Step 3: Split-Merge: --------------------------------------------------------
-// * Univariate 
+// * Univariate (New Version)
+// [[Rcpp::export]]
+Rcpp::List uni_split_merge_new(int K, arma::vec old_assign, arma::vec alpha,
+                           arma::vec xi, arma::vec y, arma::vec mu_0, 
+                           arma::vec a_sigma, arma::vec b_sigma, 
+                           arma::vec lambda, double a_theta, double b_theta, 
+                           int sm_iter){
+  Rcpp::List result;
+  int split = 0;
+  int merge = 0;
+  int accept = 1;
+  
+  // Initial the alpha vector and assignment vector
+  arma::vec new_assign = old_assign;
+  arma::vec new_alpha = alpha;
+  
+  // Create the set of active and inactive cluster
+  Rcpp::List List_clusters = active_inactive(K, old_assign);
+  arma::uvec active_clus = List_clusters["active"];
+  arma::uvec inactive_clus = List_clusters["inactive"];
+  
+  // Sample two observations from the data.
+  Rcpp::IntegerVector obs_index = Rcpp::seq(0, old_assign.size() - 1);
+  Rcpp::IntegerVector samp_obs = Rcpp::sample(obs_index, 2);
+  
+  int obs_i = samp_obs[0];
+  int obs_j = samp_obs[1];
+  int c_i = old_assign.at(obs_i);
+  int c_j = old_assign.at(obs_j);
+  
+  // This prevent the algorithm to split when all clusters are active.
+  if(active_clus.size() == K){
+    while(c_i == c_j){
+      samp_obs = Rcpp::sample(obs_index, 2);
+      obs_i = samp_obs[0];
+      obs_j = samp_obs[1];
+      c_i = old_assign.at(obs_i);
+      c_j = old_assign.at(obs_j);
+    }
+  }
+  
+  // Select only the observations that in the same cluster as obs_i and obs_j
+  arma::uvec s_index = find((old_assign == c_i) or (old_assign == c_j));
+  if(c_i == c_j){
+    split += 1;
+    arma::vec prob_inactive = arma::ones(inactive_clus.size())/
+      inactive_clus.size();
+    c_i = sample_clus(prob_inactive, inactive_clus);
+    new_assign.row(obs_i).fill(c_i);
+    new_alpha.row(c_i - 1).fill(R::rgamma(xi.at(c_i - 1), 1.0));
+  } else { // c_i != c_j
+    merge += 1;
+  }
+  
+  // Randomly assign the observation in s_index to either c_i or c_j
+  arma::uvec cluster_launch(2);
+  cluster_launch.row(0).fill(c_i);
+  cluster_launch.row(1).fill(c_j);
+  
+  for(int i = 0; i < s_index.size(); ++i){
+    int current_obs = s_index.at(i);
+    arma::vec random_prob = 0.5 * arma::ones(2);
+    if((current_obs != obs_i) and (current_obs != obs_j)){
+      new_assign.row(current_obs).
+      fill(sample_clus(random_prob, cluster_launch));
+    }
+  }
+  
+  // Perform a Launch Step
+  for(int t = 0; t < sm_iter; ++t){
+    for(int i = 0; i < s_index.size(); ++i){
+      int current_obs = s_index.at(i);
+      int launch_c = uni_alloc(current_obs, new_assign, xi, y, a_sigma, 
+                               b_sigma, lambda, mu_0, cluster_launch);
+      new_assign.row(current_obs).fill(launch_c);
+    }
+  }
+  
+  // Begin the SM process
+  double log_q_ratio = 0.0;
+  if(merge == 1){ // merge
+    // std::cout << "merge" << std::endl;
+    new_assign.elem(s_index).fill(c_j);
+  } else { // split
+    // std::cout << "split" << std::endl;
+    for(int i = 0; i < s_index.size(); ++i){
+      int current_obs = s_index.at(i);
+      int launch_c = uni_alloc(current_obs, new_assign, xi, y, a_sigma, 
+                               b_sigma, lambda, mu_0, cluster_launch);
+      new_assign.row(current_obs).fill(launch_c);
+    }
+  }
+  
+  new_alpha = adjust_alpha(K, new_assign, new_alpha);
+  
+  // MH Update (log form)
+  // Elements
+  double launch_elem = 0.0;
+  double final_elem = 0.0;
+  double alpha_log = 0.0;
+  
+  for(int k = 1; k <= K; ++k){
+    // Calculate alpha
+    if(alpha.at(k - 1) != new_alpha.at(k - 1)){
+      if(new_alpha.at(k - 1) != 0){
+        alpha_log += R::dgamma(new_alpha.at(k - 1), xi.at(k - 1), 1.0, 1);
+        alpha_log += std::log(a_theta);
+        alpha_log -= std::log(b_theta);
+      } else {
+        alpha_log -= R::dgamma(alpha.at(k - 1), 
+                               xi.at(k - 1), 1.0, 1);
+        alpha_log -= std::log(a_theta);
+        alpha_log += std::log(b_theta);
+      }
+    }
+    
+    // Calculate Multinomial
+    arma::uvec launch_elem_vec = arma::find(old_assign == k);
+    arma::uvec final_elem_vec = arma::find(new_assign == k);
+    if(launch_elem_vec.size() > 0){
+      launch_elem += launch_elem_vec.size() * 
+        std::log(alpha.at(k - 1));
+    }
+    if(final_elem_vec.size() > 0){
+      final_elem += final_elem_vec.size() * std::log(new_alpha.at(k - 1));
+    }
+  }
+  
+  double log_A = std::min(std::log(1), alpha_log + final_elem - launch_elem);
+  double log_u = std::log(R::runif(0.0, 1.0));
+  
+  if(log_u >= log_A){
+    new_assign = old_assign;
+    new_alpha = alpha;
+    accept -= 1;
+  }
+  
+  result["split"] = split;
+  result["merge"] = merge;
+  result["accept"] = accept;
+  result["new_assign"] = new_assign;
+  result["new_alpha"] = new_alpha;
+  
+  return result;
+}
+
+// * Univariate (Old Version)
 // [[Rcpp::export]]
 Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,
                            arma::vec xi, arma::vec y, arma::vec mu_0, 
@@ -1082,7 +1228,101 @@ Rcpp::List normal_SPMM_uni(arma::vec y, arma::vec xi, arma::vec mu_0,
 }
 
 // Final Function: -------------------------------------------------------------
-// * Univariate
+// * Univariate (new version of SM)
+// [[Rcpp::export]]
+Rcpp::List normal_uni_new(int K, int K_init, arma::vec y, arma::vec xi, 
+                      arma::vec mu_0, arma::vec a_sigma, arma::vec b_sigma, 
+                      arma::vec lambda, double a_theta, double b_theta, 
+                      int sm_iter, int all_iter, int iter_print){
+  
+  /* This is the function for the univariate case. We assume that our data is 
+   * followed the normal distribution. The user requires to specified 
+   * (1) The total possible number of clusters. (K)
+   * (2) The number of clusters for the initialization of the MCMC. (K_init)
+   * (3) Hyperparameter for the cluster assignment. (xi)
+   * (4) Hyperparameter for each of K clusters. (mu_0, a_sigma, b_sigma, lambda)
+   * (5) a_theta, b_theta
+   * (6) number of iterations. (sm_iter, all_iter)
+   */
+  
+  Rcpp::List result;
+  
+  // K_init should less than or equal to K.
+  if(K_init > K){
+    Rcpp::Rcout << "K must greater than or equal to K_init." << std::endl;
+    Rcpp::Rcout << "Fixed: Let K_init equals to K." << std::endl;
+    K_init = K;
+  }
+  
+  // Initial the alpha and cluster assignment
+  arma::vec old_assign = arma::conv_to<arma::vec>::
+    from(arma::randi(y.size(), arma::distr_param(1, K_init)));
+  
+  arma::vec alpha_vec = arma::zeros(K);
+  for(int k = 0; k < K_init; ++k){
+    if(xi.at(k) != 0){
+      alpha_vec.row(k).fill(R::rgamma(xi.at(k), 1.0));
+    }
+  }
+  
+  // Storing the cluster assignment for each iteration
+  arma::mat clus_assign = -1 * arma::ones(old_assign.size(), all_iter);
+  arma::mat alpha_val(alpha_vec.size(), all_iter);
+  
+  // Calculate the log marginal of the data for each observations and each clusters
+  arma::mat log_data = uni_lmar(K, y, a_sigma, b_sigma, lambda, mu_0);
+  
+  // Accept prob for SM step
+  arma::vec SM_split(all_iter);
+  arma::vec SM_merge(all_iter);
+  arma::vec SM_accept(all_iter);
+  
+  int i = 0;
+  while(i < all_iter){
+    
+    if((i+1) % iter_print == 0){
+      Rcpp::Rcout << (i+1) << std::endl;
+    }
+    
+    // Step 2: Reassign
+    Rcpp::List step2 = uni_cluster_assign(K, old_assign, xi, y, alpha_vec, 
+                                          mu_0, a_sigma, b_sigma, lambda);
+    arma::vec step2_assign = step2["new_assign"];
+    arma::vec step2_alpha = step2["new_alpha"];
+    
+    // Step 3: Split-Merge
+    Rcpp::List step3 = uni_split_merge_new(K, step2_assign, step2_alpha, xi, y, 
+                                       mu_0, a_sigma, b_sigma, lambda, a_theta, 
+                                       b_theta, sm_iter);
+    arma::vec step3_assign = step3["new_assign"];
+    arma::vec step3_alpha = step3["new_alpha"];
+    SM_accept.row(i).fill(step3["accept"]);
+    SM_split.row(i).fill(step3["split"]);
+    SM_merge.row(i).fill(step3["merge"]);
+    
+    // Step 4: Update alpha
+    arma::vec step4_alpha = update_alpha(K, step3_alpha, xi, step3_assign);
+    
+    // Record the cluster assignment
+    clus_assign.col(i) = step3_assign;
+    alpha_val.col(i) = step4_alpha;
+    
+    // Prepare for the next iteration
+    i += 1;
+    old_assign = step3_assign;
+    alpha_vec = step4_alpha;
+  }
+  
+  result["assign"] = clus_assign.t();
+  result["alpha"] = alpha_val.t();
+  result["SM_accept"] = SM_accept;
+  result["Split"] = SM_split;
+  result["Merge"] = SM_merge;
+  
+  return result;
+}
+
+// * Univariate (old version)
 // [[Rcpp::export]]
 Rcpp::List normal_uni(int K, int K_init, arma::vec y, arma::vec xi, 
                       arma::vec mu_0, arma::vec a_sigma, arma::vec b_sigma, 
