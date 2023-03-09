@@ -166,6 +166,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// uni_fmm
+arma::mat uni_fmm(int iter, arma::vec assign_init, arma::vec y, double xi, double mu0, double a_sigma, double b_sigma, double lambda);
+RcppExport SEXP _ClusterNormal_uni_fmm(SEXP iterSEXP, SEXP assign_initSEXP, SEXP ySEXP, SEXP xiSEXP, SEXP mu0SEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type iter(iterSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type assign_init(assign_initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< double >::type mu0(mu0SEXP);
+    Rcpp::traits::input_parameter< double >::type a_sigma(a_sigmaSEXP);
+    Rcpp::traits::input_parameter< double >::type b_sigma(b_sigmaSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(uni_fmm(iter, assign_init, y, xi, mu0, a_sigma, b_sigma, lambda));
+    return rcpp_result_gen;
+END_RCPP
+}
 // uni_expand
 Rcpp::List uni_expand(int K, arma::vec old_assign, arma::vec alpha, arma::vec xi, arma::vec y, arma::mat ldata, double a_theta, double b_theta);
 RcppExport SEXP _ClusterNormal_uni_expand(SEXP KSEXP, SEXP old_assignSEXP, SEXP alphaSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP ldataSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP) {
@@ -436,6 +454,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_uni_alloc", (DL_FUNC) &_ClusterNormal_uni_alloc, 9},
     {"_ClusterNormal_multi_alloc", (DL_FUNC) &_ClusterNormal_multi_alloc, 9},
     {"_ClusterNormal_rdirichlet_cpp", (DL_FUNC) &_ClusterNormal_rdirichlet_cpp, 2},
+    {"_ClusterNormal_uni_fmm", (DL_FUNC) &_ClusterNormal_uni_fmm, 8},
     {"_ClusterNormal_uni_expand", (DL_FUNC) &_ClusterNormal_uni_expand, 8},
     {"_ClusterNormal_multi_expand_step", (DL_FUNC) &_ClusterNormal_multi_expand_step, 11},
     {"_ClusterNormal_uni_cluster_assign", (DL_FUNC) &_ClusterNormal_uni_cluster_assign, 9},

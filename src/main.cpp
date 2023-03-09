@@ -213,7 +213,7 @@ int uni_alloc(int i, arma::vec old_assign, arma::vec xi, arma::vec y,
               arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, 
               arma::vec mu_0, arma::uvec active_clus){
   
-  int new_assign;
+  int new_assign = 0;
   
   // Retrieve the active cluster
   int K_active = active_clus.size();
@@ -395,6 +395,50 @@ arma::mat rdirichlet_cpp(int num_samples, arma::vec alpha_m){
     }
   }
   return(distribution);
+}
+
+// Finite Mixture Model: -------------------------------------------------------
+// [[Rcpp::export]]
+arma::mat uni_fmm(int iter, arma::vec assign_init, arma::vec y, double xi, 
+                  double mu0, double a_sigma, double b_sigma, double lambda){
+  
+  /* Description: This function will run the finite mixture model. This function
+   *              is adapted from the second step of SFMM (Allocation step).
+   * Input: Iteration (iter), The initial assignment (assign_init), 
+   *        data (y), cluster allocation hyperparameter (xi),
+   *        data hyperparameter (mu_0, a_sigma, b_sigma and lambda)
+   * Output: The cluster allocation for each iteration.
+   * Note: We assume that the hyperparameter for every cluster are same.
+   */
+  
+  // Create a matrix for storing a final result
+  arma::mat clus_assign = arma::zeros(y.size(), iter);
+  
+  // Create the vector storing the hyperparameter for each cluster.
+  arma::vec uniq_clus = arma::unique(assign_init);
+  int K_max = uniq_clus.size() + 1;
+  arma::vec xi_vec = xi * arma::ones(K_max); // xi
+  arma::vec mu0_vec = mu0 * arma::ones(K_max); // mu0
+  arma::vec a_sigma_vec = a_sigma * arma::ones(K_max); // a_sigma
+  arma::vec b_sigma_vec = b_sigma * arma::ones(K_max); // b_sigma
+  arma::vec lambda_vec = lambda * arma::ones(K_max); // lambda
+  
+  // Indicate the possible number of clusters.
+  arma::uvec all_clus = arma::regspace<arma::uvec>(1, 1, K_max); 
+  
+  // Perform a FMM
+  for(int t = 0; t < iter; ++t){ // Loop through the iteration
+    for(int i = 0; i < y.size(); ++i){ // Loop through the observation
+      int new_c = -1;
+      new_c = uni_alloc(i, assign_init, xi_vec, y, a_sigma_vec, b_sigma_vec, 
+                        lambda_vec, mu0_vec, all_clus);
+      assign_init.row(i).fill(new_c);
+    }
+    // Record the cluster assignment
+    clus_assign.col(t) = assign_init;
+  }
+  
+  return clus_assign.t();
 }
 
 // Step 1: Update the cluster space: -------------------------------------------
