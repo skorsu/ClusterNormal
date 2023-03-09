@@ -45,6 +45,10 @@ rdirichlet_cpp <- function(num_samples, alpha_m) {
     .Call(`_ClusterNormal_rdirichlet_cpp`, num_samples, alpha_m)
 }
 
+uni_fmm <- function(iter, assign_init, y, xi, mu0, a_sigma, b_sigma, lambda) {
+    .Call(`_ClusterNormal_uni_fmm`, iter, assign_init, y, xi, mu0, a_sigma, b_sigma, lambda)
+}
+
 uni_expand <- function(K, old_assign, alpha, xi, y, ldata, a_theta, b_theta) {
     .Call(`_ClusterNormal_uni_expand`, K, old_assign, alpha, xi, y, ldata, a_theta, b_theta)
 }
