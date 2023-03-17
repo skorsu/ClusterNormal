@@ -4,9 +4,21 @@
 #define pi 3.141592653589793238462643383280
 
 // Note to self: ---------------------------------------------------------------
+// * Debugging the whole process
+// * Step 1: Omitted 
+// * Step 2 : Reallocation (Check this one first as SFF failed. -- Based on 3/9)
+// ** Function: Detect the active cluster and inactive cluster 
+// *** (We use only the list of active clusters in this step.)
+// ** Function: Calculate the allocation probability.
+// ** Function: Reassign the observation based on the allocation probability.
 
+// * Step 3: Split-Merge
+
+// * Step 4: Update alpha vecter
 
 // User-defined function: ------------------------------------------------------
+
+
 // [[Rcpp::export]]
 arma::vec init_seq(int n, int K){
   arma::vec test_vec(n);
@@ -278,100 +290,6 @@ int uni_alloc(int i, arma::vec old_assign, arma::vec xi, arma::vec y,
 }
 
 // [[Rcpp::export]]
-int multi_alloc(int i, arma::vec old_assign, arma::vec xi, arma::mat y, 
-                arma::mat mu_0, arma::vec lambda_0, arma::vec nu_0, 
-                arma::cube L_0, arma::uvec active_clus){
-  
-  int new_assign;
-  
-  // Retrieve the active cluster
-  int K_active = active_clus.size();
-  
-  if(K_active == 1){
-    // If we have only one active cluster, it should be allocated to this cluster.
-    new_assign = active_clus.at(0);
-  } else {
-    // If not, we will reallocate observation i into one of them.
-    // First, create two sets of the data: yi and not yi.
-    arma::vec yi = arma::conv_to<arma::vec>::from(y.row(i));
-    arma::mat y_not_i = y;
-    y.shed_row(i);
-    arma::vec c_not_yi = old_assign;
-    c_not_yi.shed_row(i);
-    
-    // Create a vector for storing a log unnormaolized probability
-    arma::vec log_unnorm(K_active);
-    
-    for(int k = 0; k < K_active; ++k){
-      int cc = active_clus.at(k);
-      arma::uvec S_index = arma::find(c_not_yi == cc);
-      
-      // Select the hyperparameter that corresponding to the cluster k
-      double d = yi.size();
-      arma::vec mu_0k = arma::conv_to<arma::vec>::from(mu_0.row(cc - 1));
-      arma::mat L_0k = L_0.slice(cc - 1);
-      double lamb_0k = lambda_0.at(cc - 1);
-      double nu_0k = nu_0.at(cc - 1);
-      double xi_k = xi.at(cc - 1);
-      double n_k = S_index.size();
-      
-      // Calculate the parameter for the posterior predictive distribution
-      double nu_nk = nu_0k + n_k;
-      double lamb_nk = lamb_0k + n_k;
-      arma::vec ybar = arma::zeros(d);
-      arma::mat S = arma::zeros(arma::size(L_0k));
-      
-      if(n_k > 0){
-        ybar = arma::conv_to<arma::vec>::from(arma::mean(y_not_i, 0));
-      }
-      
-      if(n_k > 0){
-        for(int i = 0; i < n_k; ++i){
-          arma::vec y_c = arma::conv_to<arma::vec>::from(y_not_i.row(i));
-          arma::vec y_ybar = y_c - ybar;
-          S += (y_ybar * arma::trans(y_ybar));
-        }
-      }
-      
-      arma::vec mu_nk = (((lamb_0k)/(lamb_0k + n_k)) * mu_0k) + 
-        (((n_k)/(lamb_0k + n_k)) * ybar);
-      
-      arma::vec ybar_mu0 = arma::conv_to<arma::vec>::from(ybar - mu_0k);
-      arma::mat L_nk = ((lamb_0k * n_k)/(lamb_0k + n_k)) * (ybar_mu0 * arma::trans(ybar_mu0));
-      L_nk += (L_0k + S);
-      
-      arma::mat s_star = L_nk * ((lamb_nk + 1)/((lamb_nk) * (nu_nk - d + 1)));
-      double val_Lnk;
-      double sign_Lnk;
-      bool log_det_Lnk = arma::log_det(val_Lnk, sign_Lnk, L_nk);
-      
-      arma::vec y_mu_n = arma::conv_to<arma::vec>::from(yi - mu_nk);
-      
-      double base_p = arma::as_scalar(arma::trans(y_mu_n) * arma::inv(s_star) * y_mu_n);
-      base_p *= (1/(nu_nk - d + 1));
-      base_p += 1.0;
-      
-      // Calculate log_allocate prob
-      double log_val = 0.0;
-      log_val += lgamma(0.5 * (nu_nk + 1));
-      log_val -= lgamma(0.5 * (nu_nk - d + 1));
-      log_val -= ((d/2) * log(nu_nk - d + 1));
-      log_val -= ((d/2) * log(pi));
-      log_val -= (0.5 * val_Lnk * sign_Lnk);
-      log_val -= ((0.5 * (nu_nk + 1)) * log(base_p));
-      
-      log_unnorm.row(k).fill(log_val + log(n_k + xi_k));
-    }
-    
-    // Normalized the log_unnorm by applying the log_sum_exp trick
-    new_assign = sample_clus(log_sum_exp(log_unnorm), active_clus);
-    
-  }
-  
-  return new_assign;
-}
-
-// [[Rcpp::export]]
 arma::mat rdirichlet_cpp(int num_samples, arma::vec alpha_m){
   int distribution_size = alpha_m.n_elem;
   // each row will be a draw from a Dirichlet
@@ -563,6 +481,76 @@ Rcpp::List multi_expand_step(int K, arma::vec old_assign, arma::vec alpha,
 }
 
 // Step 2: Allocate the observation to the existing clusters: ------------------
+// [[Rcpp::export]]
+Rcpp::List log_alloc_prob(int i, arma::vec old_assign, arma::vec xi, 
+                          arma::vec y, arma::vec a_sigma, arma::vec b_sigma, 
+                          arma::vec lambda, arma::vec mu0){
+  
+  Rcpp::List result;
+
+  // Get the list of the active clusters
+  arma::uvec active_clus;
+  active_clus = arma::conv_to<arma::uvec>::from(arma::unique(old_assign));
+  result["active_clus"] = active_clus;
+  
+  int K_pos = active_clus.size();
+  arma::vec log_alloc = 100 * arma::ones(K_pos);
+  
+  // Create the data vector which exclude the observation i.
+  arma::vec y_not_i(y);
+  y_not_i.shed_row(i);
+  arma::vec c_not_i(old_assign);
+  c_not_i.shed_row(i);
+  
+  // Calculate the log allocation probability for each cluster
+  arma::vec nk_vec = -1 * arma::ones(K_pos);
+  for(int k = 0; k < K_pos; ++k){
+    int c = active_clus[k]; // current cluster for this iteration
+    arma::vec y_c(y_not_i);
+    y_c.shed_rows(arma::find(c_not_i != c)); // data point in the current c
+    int n_k = y_c.size(); // number of element in cluster c
+    
+    // Calculate the posterior parameters
+    double a_n = a_sigma[(c-1)] + (n_k/2);
+    double V_n = 1/(n_k + lambda[(c-1)]);
+    double sum_y = 0.0;
+    double b_n = b_sigma[(c-1)]; // if n_k = 0 then b_n = b_k;
+    if(n_k != 0){
+      sum_y += arma::accu(y_c);
+      b_n += (0.5 * (n_k - 1) * arma::var(y_c)); // if n_k = 1, drop the second terms of b_k
+      b_n += (0.5 * (n_k * lambda[(c-1)]) / (n_k + lambda[(c-1)])) * std::pow((sum_y/n_k) - mu0[(c-1)], 2.0);
+    }
+    double mu_n = (sum_y + ((lambda % mu0)[(c-1)]))/(n_k + lambda[(c-1)]);
+    
+    // The posterior predictive is scaled-t distribution.
+    double sd_t = std::pow(b_n * (1 + V_n) / a_n, 0.5);
+    double log_p = R::dt((y[i] - mu_n)/sd_t, (2 * a_n), 1);
+    log_p -= std::log(sd_t);
+    
+    // The allocation probability needs to include log(n_k + xi_k).
+    log_p += std::log(n_k + xi[(c-1)]);
+    
+    log_alloc.row(k).fill(log_p);
+  }
+  
+  result["log_alloc"] = log_alloc;
+  return result;
+  
+}
+
+// * Univariate (New)
+// [[Rcpp::export]]
+Rcpp::List clus_alloc(arma::vec old_assign, arma::vec xi, arma::vec y, 
+                      arma::vec alpha, arma::vec mu_0, arma::vec a_sigma, 
+                      arma::vec b_sigma, arma::vec lambda){
+  Rcpp::List result;
+  
+
+  // Reassign the observation
+  
+  return result;
+}
+
 // * Univariate
 // [[Rcpp::export]]
 Rcpp::List uni_cluster_assign(int K, arma::vec old_assign, arma::vec xi, 
@@ -578,34 +566,6 @@ Rcpp::List uni_cluster_assign(int K, arma::vec old_assign, arma::vec xi,
   for(int i = 0; i < old_assign.size(); ++i){
     int new_c = uni_alloc(i, old_assign, xi, y, a_sigma, b_sigma, lambda, 
                           mu_0, active_clus);
-    old_assign.row(i).fill(new_c);
-  }
-  
-  // Adjust an alpha vector
-  arma::vec new_alpha = adjust_alpha(K, old_assign, alpha);
-  
-  result["new_assign"] = old_assign;
-  result["new_alpha"] = new_alpha;
-  
-  return result;
-}
-
-// * Multivariate
-// [[Rcpp::export]]
-Rcpp::List multi_cluster_assign(int K, arma::vec old_assign, arma::vec xi, 
-                                arma::mat y, arma::vec alpha, 
-                                arma::mat mu_0, arma::vec lambda_0, 
-                                arma::vec nu_0, arma::cube L_0){
-  Rcpp::List result;
-  
-  Rcpp::List active_List = active_inactive(K, old_assign);
-  arma::uvec active_clus = active_List["active"];
-  
-  // Assign a new assignment
-  for(int i = 0; i < old_assign.size(); ++i){
-    // Create the vector of the active cluster
-    int new_c = multi_alloc(i, old_assign, xi, y, mu_0, lambda_0, nu_0, L_0, 
-                            active_clus);
     old_assign.row(i).fill(new_c);
   }
   
@@ -789,171 +749,6 @@ Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,
   result["split"] = split_i;
   result["split_k"] = split_k;
   result["merge"] = merge_i;
-  result["new_assign"] = new_assign;
-  result["new_alpha"] = new_alpha;
-  
-  return result;
-}
-
-// * Multivariate
-// [[Rcpp::export]]
-Rcpp::List multi_split_merge(int K, arma::vec old_assign, arma::vec alpha,
-                             arma::vec xi, arma::mat y, arma::mat mu_0, 
-                             arma::vec lambda_0, arma::vec nu_0, 
-                             arma::cube L_0, double a_theta, double b_theta, 
-                             int sm_iter){
-  Rcpp::List result;
-  
-  // Initial the alpha vector and assignment vector
-  arma::vec launch_assign = old_assign;
-  arma::vec launch_alpha = alpha;
-  
-  // Create the set of active and inactive cluster
-  Rcpp::List List_clusters = active_inactive(K, old_assign);
-  arma::uvec active_clus = List_clusters["active"];
-  arma::uvec inactive_clus = List_clusters["inactive"];
-  
-  // Sample two observations from the data.
-  Rcpp::IntegerVector obs_index = Rcpp::seq(0, old_assign.size() - 1);
-  Rcpp::IntegerVector samp_obs = Rcpp::sample(obs_index, 2);
-  
-  int obs_i = samp_obs[0];
-  int obs_j = samp_obs[1];
-  int c_i = old_assign.at(obs_i); // ci_launch
-  int c_j = old_assign.at(obs_j); // cj_launch
-  
-  if(active_clus.size() == K){
-    while(c_i == c_j){
-      samp_obs = Rcpp::sample(obs_index, 2);
-      obs_i = samp_obs[0];
-      obs_j = samp_obs[1];
-      c_i = old_assign.at(obs_i);
-      c_j = old_assign.at(obs_j);
-    }
-  }
-  
-  // Select only the observations that in the same cluster as obs_i and obs_j
-  arma::uvec s_index = find((old_assign == c_i) or (old_assign == c_j));
-  
-  if(c_i == c_j){
-    arma::vec prob_inactive = arma::ones(inactive_clus.size())/
-      inactive_clus.size();
-    c_i = sample_clus(prob_inactive, inactive_clus);
-    launch_assign.row(obs_i).fill(c_i);
-    launch_alpha.row(c_i - 1).fill(R::rgamma(xi.at(c_i - 1), 1.0));
-  }
-  
-  // Randomly assign the observation in s_index to either c_i or c_j
-  arma::uvec cluster_launch(2);
-  cluster_launch.row(0).fill(c_i);
-  cluster_launch.row(1).fill(c_j);
-  
-  for(int i = 0; i < s_index.size(); ++i){
-    int current_obs = s_index.at(i);
-    arma::vec random_prob = 0.5 * arma::ones(2);
-    if((current_obs != obs_i) and (current_obs != obs_j)){
-      launch_assign.row(current_obs).
-      fill(sample_clus(random_prob, cluster_launch));
-    }
-  }
-  
-  // Perform a Launch Step
-  for(int t = 0; t < sm_iter; ++t){
-    for(int i = 0; i < s_index.size(); ++i){
-      int current_obs = s_index.at(i);
-      int launch_c = multi_alloc(current_obs, launch_assign, xi, y, mu_0, 
-                                 lambda_0, nu_0, L_0, cluster_launch);
-      launch_assign.row(current_obs).fill(launch_c);
-    }
-  }
-  
-  // Prepare for the split-merge process
-  double sm_indicator = 0.0;
-  arma::vec new_assign = launch_assign;
-  arma::vec launch_alpha_vec = launch_alpha; 
-  // We will use launch_assign and launch_alpha_vec for MH algorithm.
-  List_clusters = active_inactive(K, launch_assign);
-  arma::uvec active_sm = List_clusters["active"];
-  arma::uvec inactive_sm = List_clusters["inactive"];
-  
-  c_i = launch_assign.at(obs_i);
-  c_j = launch_assign.at(obs_j);
-  arma::uvec cluster_sm(2);
-  cluster_sm.row(0).fill(-1);
-  cluster_sm.row(1).fill(c_j);
-  
-  // Split-Merge Process
-  if(c_i != c_j){ 
-    // merge these two clusters into c_j cluster
-    sm_indicator = 1.0;
-    new_assign.elem(s_index).fill(c_j);
-  } else if((c_i == c_j) and (active_sm.size() != K)) { 
-    // split in case that at least one cluster is inactive.
-    sm_indicator = -1.0;
-    
-    // sample a new inactive cluster
-    arma::vec prob_inactive = arma::ones(inactive_sm.size())/inactive_sm.size();
-    c_i = sample_clus(prob_inactive, inactive_sm);
-    new_assign.row(obs_i).fill(c_i);
-    launch_alpha.row(c_i - 1).fill(R::rgamma(xi.at(c_i - 1), 1.0));
-    cluster_sm.row(0).fill(c_i);
-    
-    for(int i = 0; i < s_index.size(); ++i){
-      int current_obs = s_index.at(i);
-      if((current_obs != obs_i) and (current_obs != obs_j)){
-        int new_c = multi_alloc(current_obs, new_assign, xi, y, mu_0, lambda_0, 
-                                nu_0, L_0, cluster_sm);
-        new_assign.row(current_obs).fill(new_c);
-      }
-    }
-  } else {
-    
-    // Rcpp::Rcout << "final: split (none inactive)" << std::endl;
-  }
-  arma::vec new_alpha = adjust_alpha(K, new_assign, launch_alpha);
-  
-  // MH Update (log form)
-  // Elements
-  double launch_elem = 0.0;
-  double final_elem = 0.0;
-  double alpha_log = 0.0;
-  double proposal = sm_indicator * std::log(0.5) * s_index.size();
-  
-  for(int k = 1; k <= K; ++k){
-    // Calculate alpha
-    if(launch_alpha_vec.at(k - 1) != new_alpha.at(k - 1)){
-      if(new_alpha.at(k - 1) != 0){
-        alpha_log += R::dgamma(new_alpha.at(k - 1), xi.at(k - 1), 1.0, 1);
-        alpha_log += std::log(a_theta);
-        alpha_log -= std::log(b_theta);
-      } else {
-        alpha_log -= R::dgamma(launch_alpha_vec.at(k - 1), 
-                               xi.at(k - 1), 1.0, 1);
-        alpha_log -= std::log(a_theta);
-        alpha_log += std::log(b_theta);
-      }
-    }
-    // Calculate Multinomial
-    arma::uvec launch_elem_vec = arma::find(launch_assign == k);
-    arma::uvec final_elem_vec = arma::find(new_assign == k);
-    if(launch_elem_vec.size() > 0){
-      launch_elem += launch_elem_vec.size() * 
-        std::log(launch_alpha_vec.at(k - 1));
-    }
-    if(final_elem_vec.size() > 0){
-      final_elem += final_elem_vec.size() * std::log(new_alpha.at(k - 1));
-    }
-  }
-  
-  double log_A = std::min(std::log(1), 
-                          alpha_log + final_elem - launch_elem + proposal);
-  double log_u = std::log(R::runif(0.0, 1.0));
-  
-  if(log_u >= log_A){
-    new_assign = launch_assign;
-    new_alpha = launch_alpha_vec;
-  }
-  
   result["new_assign"] = new_assign;
   result["new_alpha"] = new_alpha;
   

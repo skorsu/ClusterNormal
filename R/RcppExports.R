@@ -37,10 +37,6 @@ uni_alloc <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, acti
     .Call(`_ClusterNormal_uni_alloc`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus)
 }
 
-multi_alloc <- function(i, old_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus) {
-    .Call(`_ClusterNormal_multi_alloc`, i, old_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus)
-}
-
 rdirichlet_cpp <- function(num_samples, alpha_m) {
     .Call(`_ClusterNormal_rdirichlet_cpp`, num_samples, alpha_m)
 }
@@ -57,20 +53,20 @@ multi_expand_step <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0,
     .Call(`_ClusterNormal_multi_expand_step`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta)
 }
 
+log_alloc_prob <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_log_alloc_prob`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
+}
+
+clus_alloc <- function(old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
+    .Call(`_ClusterNormal_clus_alloc`, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda)
+}
+
 uni_cluster_assign <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
     .Call(`_ClusterNormal_uni_cluster_assign`, K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda)
 }
 
-multi_cluster_assign <- function(K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0) {
-    .Call(`_ClusterNormal_multi_cluster_assign`, K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0)
-}
-
 uni_split_merge <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
     .Call(`_ClusterNormal_uni_split_merge`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
-}
-
-multi_split_merge <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter) {
-    .Call(`_ClusterNormal_multi_split_merge`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter)
 }
 
 update_alpha <- function(K, alpha, xi, old_assign) {
