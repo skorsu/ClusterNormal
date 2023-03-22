@@ -482,16 +482,20 @@ Rcpp::List multi_expand_step(int K, arma::vec old_assign, arma::vec alpha,
 
 // Step 2: Allocate the observation to the existing clusters: ------------------
 // [[Rcpp::export]]
-Rcpp::List log_alloc_prob(int i, arma::vec old_assign, arma::vec xi, 
+Rcpp::List log_alloc_prob(int K, int i, arma::vec old_assign, arma::vec xi, 
                           arma::vec y, arma::vec a_sigma, arma::vec b_sigma, 
                           arma::vec lambda, arma::vec mu0){
   
   Rcpp::List result;
-
+  
   // Get the list of the active clusters
   arma::uvec active_clus;
   active_clus = arma::conv_to<arma::uvec>::from(arma::unique(old_assign));
-  result["active_clus"] = active_clus;
+  
+  // Error Handling
+  if(active_clus.size() > K){
+    Rcpp::stop("The active clusters is more than the possible maximum clusters");
+  }
   
   int K_pos = active_clus.size();
   arma::vec log_alloc = 100 * arma::ones(K_pos);
@@ -533,22 +537,43 @@ Rcpp::List log_alloc_prob(int i, arma::vec old_assign, arma::vec xi,
     log_alloc.row(k).fill(log_p);
   }
   
+  result["active_clus"] = active_clus;
   result["log_alloc"] = log_alloc;
+  
   return result;
   
 }
 
+// [[Rcpp::export]]
+int samp_new(Rcpp::List alloc_list){
+  // Convert the log probability back to probability using log-sum-exp trick
+  arma::vec prob = log_sum_exp(alloc_list["log_alloc"]);
+  
+  // Sample from the list of the active cluster using the aloocation probability 
+  arma::vec active_prob = alloc_list["active_clus"];
+  int K = prob.size();
+  Rcpp::IntegerVector x_index = Rcpp::seq(0, (K - 1));
+  Rcpp::NumericVector norm_prob = Rcpp::wrap(prob);
+  Rcpp::IntegerVector x = Rcpp::sample(x_index, 1, false, norm_prob);
+  return active_prob[x[0]];
+}
+
 // * Univariate (New)
 // [[Rcpp::export]]
-Rcpp::List clus_alloc(arma::vec old_assign, arma::vec xi, arma::vec y, 
-                      arma::vec alpha, arma::vec mu_0, arma::vec a_sigma, 
-                      arma::vec b_sigma, arma::vec lambda){
-  Rcpp::List result;
+arma::vec clus_alloc(int K, arma::vec old_assign, arma::vec xi, arma::vec y, 
+                     arma::vec alpha, arma::vec mu0, arma::vec a_sigma, 
+                     arma::vec b_sigma, arma::vec lambda){
   
+  arma::vec new_assign(old_assign);
 
   // Reassign the observation
+  for(int i = 0; i < new_assign.size(); ++i){
+    Rcpp::List obs_i_alloc = log_alloc_prob(K, i, new_assign, xi, y, 
+                                            a_sigma, b_sigma, lambda, mu0);
+    new_assign.row(i).fill(samp_new(obs_i_alloc));
+  }
   
-  return result;
+  return new_assign;
 }
 
 // * Univariate

@@ -53,12 +53,16 @@ multi_expand_step <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0,
     .Call(`_ClusterNormal_multi_expand_step`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta)
 }
 
-log_alloc_prob <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_log_alloc_prob`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
+log_alloc_prob <- function(K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_log_alloc_prob`, K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
 }
 
-clus_alloc <- function(old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
-    .Call(`_ClusterNormal_clus_alloc`, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda)
+samp_new <- function(alloc_list) {
+    .Call(`_ClusterNormal_samp_new`, alloc_list)
+}
+
+clus_alloc <- function(K, old_assign, xi, y, alpha, mu0, a_sigma, b_sigma, lambda) {
+    .Call(`_ClusterNormal_clus_alloc`, K, old_assign, xi, y, alpha, mu0, a_sigma, b_sigma, lambda)
 }
 
 uni_cluster_assign <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
