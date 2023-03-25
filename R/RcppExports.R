@@ -5,92 +5,24 @@ init_seq <- function(n, K) {
     .Call(`_ClusterNormal_init_seq`, n, K)
 }
 
-active_inactive <- function(K, clus_assign) {
-    .Call(`_ClusterNormal_active_inactive`, K, clus_assign)
-}
-
-sample_clus <- function(norm_probs, active_clus) {
-    .Call(`_ClusterNormal_sample_clus`, norm_probs, active_clus)
-}
-
-log_multi_lgamma <- function(a, d) {
-    .Call(`_ClusterNormal_log_multi_lgamma`, a, d)
-}
-
-uni_lmar <- function(K, y, a_sigma, b_sigma, lambda_k, mu_0) {
-    .Call(`_ClusterNormal_uni_lmar`, K, y, a_sigma, b_sigma, lambda_k, mu_0)
-}
-
-uni_log_marginal <- function(y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K) {
-    .Call(`_ClusterNormal_uni_log_marginal`, y, a_sigma_K, b_sigma_K, lambda_K, mu_0_K)
-}
-
-multi_log_marginal <- function(y, mu_0, lambda_0, nu_0, L_0) {
-    .Call(`_ClusterNormal_multi_log_marginal`, y, mu_0, lambda_0, nu_0, L_0)
-}
-
 log_sum_exp <- function(log_unnorm_prob) {
     .Call(`_ClusterNormal_log_sum_exp`, log_unnorm_prob)
-}
-
-uni_alloc <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus) {
-    .Call(`_ClusterNormal_uni_alloc`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus)
-}
-
-multi_alloc <- function(i, old_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus) {
-    .Call(`_ClusterNormal_multi_alloc`, i, old_assign, xi, y, mu_0, lambda_0, nu_0, L_0, active_clus)
 }
 
 rdirichlet_cpp <- function(num_samples, alpha_m) {
     .Call(`_ClusterNormal_rdirichlet_cpp`, num_samples, alpha_m)
 }
 
-uni_fmm <- function(iter, assign_init, y, xi, mu0, a_sigma, b_sigma, lambda) {
-    .Call(`_ClusterNormal_uni_fmm`, iter, assign_init, y, xi, mu0, a_sigma, b_sigma, lambda)
+log_alloc_prob <- function(K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_log_alloc_prob`, K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
 }
 
-uni_expand <- function(K, old_assign, alpha, xi, y, ldata, a_theta, b_theta) {
-    .Call(`_ClusterNormal_uni_expand`, K, old_assign, alpha, xi, y, ldata, a_theta, b_theta)
+samp_new <- function(K, log_alloc) {
+    .Call(`_ClusterNormal_samp_new`, K, log_alloc)
 }
 
-multi_expand_step <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta) {
-    .Call(`_ClusterNormal_multi_expand_step`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta)
-}
-
-uni_cluster_assign <- function(K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda) {
-    .Call(`_ClusterNormal_uni_cluster_assign`, K, old_assign, xi, y, alpha, mu_0, a_sigma, b_sigma, lambda)
-}
-
-multi_cluster_assign <- function(K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0) {
-    .Call(`_ClusterNormal_multi_cluster_assign`, K, old_assign, xi, y, alpha, mu_0, lambda_0, nu_0, L_0)
-}
-
-uni_split_merge <- function(K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
-    .Call(`_ClusterNormal_uni_split_merge`, K, old_assign, alpha, xi, y, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
-}
-
-multi_split_merge <- function(K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter) {
-    .Call(`_ClusterNormal_multi_split_merge`, K, old_assign, alpha, xi, y, mu_0, lambda_0, nu_0, L_0, a_theta, b_theta, sm_iter)
-}
-
-update_alpha <- function(K, alpha, xi, old_assign) {
-    .Call(`_ClusterNormal_update_alpha`, K, alpha, xi, old_assign)
-}
-
-normal_uni <- function(K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print) {
-    .Call(`_ClusterNormal_normal_uni`, K, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, all_iter, iter_print)
-}
-
-SPMM_uni_alloc <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus) {
-    .Call(`_ClusterNormal_SPMM_uni_alloc`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu_0, active_clus)
-}
-
-SPMM_uni_cluster_assign <- function(K, old_assign, xi, y, mu_0, a_sigma, b_sigma, lambda) {
-    .Call(`_ClusterNormal_SPMM_uni_cluster_assign`, K, old_assign, xi, y, mu_0, a_sigma, b_sigma, lambda)
-}
-
-normal_SPMM_uni <- function(K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, all_iter, iter_print) {
-    .Call(`_ClusterNormal_normal_SPMM_uni`, K_init, y, xi, mu_0, a_sigma, b_sigma, lambda, all_iter, iter_print)
+fmm_mod <- function(t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_fmm_mod`, t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
 }
 
 rcpparma_hello_world <- function() {
