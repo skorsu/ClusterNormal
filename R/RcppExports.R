@@ -21,8 +21,8 @@ samp_new <- function(K, log_alloc) {
     .Call(`_ClusterNormal_samp_new`, K, log_alloc)
 }
 
-clus_alloc <- function(K, old_assign, xi, y, alpha, mu0, a_sigma, b_sigma, lambda) {
-    .Call(`_ClusterNormal_clus_alloc`, K, old_assign, xi, y, alpha, mu0, a_sigma, b_sigma, lambda)
+fmm_mod <- function(t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_fmm_mod`, t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
 }
 
 rcpparma_hello_world <- function() {

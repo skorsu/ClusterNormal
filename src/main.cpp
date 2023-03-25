@@ -245,22 +245,37 @@ int samp_new(int K, arma::vec log_alloc){
 
 
 // Step 2: Allocate the observation to the existing clusters: ------------------
-// * Univariate (New)
+// Finite Mixture Model
 // [[Rcpp::export]]
-arma::vec clus_alloc(int K, arma::vec old_assign, arma::vec xi, arma::vec y, 
-                     arma::vec alpha, arma::vec mu0, arma::vec a_sigma, 
-                     arma::vec b_sigma, arma::vec lambda){
+arma::mat fmm_mod(int t, int K, arma::vec old_assign, arma::vec xi, arma::vec y, 
+                  arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, 
+                  arma::vec mu0){
+  
+  /* Description: This function will perform a finite mixture model.
+   * Output: a matrix of the cluster assignment. Each row represents each 
+   *         iteration and each column represent each observation.
+   * Input: Number of iteration (t), Maximum possible cluster (K), 
+   *        the previous assignment (old_assign), cluster concentration (xi), 
+   *        data (y), data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+   */
+  
+  arma::mat final_result = -1 * arma::ones(t, y.size());
   
   arma::vec new_assign(old_assign);
-
-  // Reassign the observation
-  for(int i = 0; i < new_assign.size(); ++i){
-    arma::vec obs_i_alloc = log_alloc_prob(K, i, old_assign, xi, y, a_sigma, 
-                                           b_sigma, lambda, mu0);
-    new_assign.row(i).fill(samp_new(K, obs_i_alloc));
+  for(int iter = 0; iter < t; ++iter){
+    
+    // Reassign the observation
+    for(int i = 0; i < new_assign.size(); ++i){
+      arma::vec obs_i_alloc = log_alloc_prob(K, i, new_assign, xi, y, a_sigma, 
+                                             b_sigma, lambda, mu0);
+      new_assign.row(i).fill(samp_new(K, obs_i_alloc));
+    }
+    
+    // Record the result for the iteration #iter
+    final_result.row(iter) = new_assign.t();
   }
-  
-  return new_assign;
+
+  return final_result;
 }
 
 // Step 3: Split-Merge: --------------------------------------------------------
