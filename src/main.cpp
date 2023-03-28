@@ -4,14 +4,12 @@
 #define pi 3.141592653589793238462643383280
 
 // Note to self: ---------------------------------------------------------------
-// * Debugging the whole process
+// * FMM: Complete (updated on 3/22/2023)
+// * Our model: In progress
 // * Step 1: Omitted 
-// * Step 2 : Reallocation 
-// ** Updated on 3/22/2023: FMM works! (Better than the previous version)
-
-// * Step 3: Split-Merge
-
-// * Step 4: Update alpha vector
+// * Step 2 (Reallocation): First Draft - Done!
+// * Step 3 (Split-Merge): 
+// * Step 4: (Update alpha): 
 
 // User-defined function: ------------------------------------------------------
 // [[Rcpp::export]]
@@ -67,40 +65,15 @@ arma::vec adjust_alpha(int K, arma::vec clus_assign, arma::vec alpha_vec){
   return a_alpha;
 }
 
+// Finite Mixture Model: -------------------------------------------------------
 // [[Rcpp::export]]
-arma::mat rdirichlet_cpp(int num_samples, arma::vec alpha_m){
-  int distribution_size = alpha_m.n_elem;
-  // each row will be a draw from a Dirichlet
-  arma::mat distribution = arma::zeros(num_samples, distribution_size);
-  
-  /* Description: Sample from dirichlet distribution.
-   * Credit: https://www.mjdenny.com/blog.html
-   */
-  
-  for (int i = 0; i < num_samples; ++i){
-    double sum_term = 0;
-    // loop through the distribution and draw Gamma variables
-    for (int j = 0; j < distribution_size; ++j){
-      double cur = R::rgamma(alpha_m[j],1.0);
-      distribution(i,j) = cur;
-      sum_term += cur;
-    }
-    // now normalize
-    for (int j = 0; j < distribution_size; ++j) {
-      distribution(i,j) = distribution(i,j)/sum_term;
-    }
-  }
-  return(distribution);
-}
-
-// Updated Code: ---------------------------------------------------------------
-// [[Rcpp::export]]
-arma::vec log_alloc_prob(int K, int i, arma::vec old_assign, arma::vec xi, 
+arma::vec fmm_log_alloc_prob(int K, int i, arma::vec old_assign, arma::vec xi, 
                          arma::vec y, arma::vec a_sigma, arma::vec b_sigma, 
                          arma::vec lambda, arma::vec mu0){
   
   /* Description: This function will calculate the log allocation probability
-   *              of the particular observation for all possible clusters.
+   *              of the particular observation for all possible clusters. 
+   *              This function is designed for the finite mixture model.
    * Output: log of the allocation probability for each cluster.
    * Input: Maximum possible cluster (K), index of the current observation (i),
    *        current cluster assignment (old_assign), cluster concentration (xi),
@@ -161,14 +134,14 @@ arma::vec log_alloc_prob(int K, int i, arma::vec old_assign, arma::vec xi,
 }
 
 // [[Rcpp::export]]
-int samp_new(int K, arma::vec log_alloc){
+int fmm_samp_new(int K, arma::vec log_alloc){
   
   /* Description: This function will perform two things. The first is to 
    *              transform the log allocation probability back to the 
    *              probability by applying log-sum-exp trick. Secondly, it will 
    *              sample the new cluster based on the probability from the first
-   *              step.
-   * Output: new cluster
+   *              step. This function is designed for the finite mixture model.
+   * Output: new cluster assignment for the observation #i
    * Input: Maximum possible cluster (K), the allocation probability in the log 
    *        scale (log_alloc).
    */
@@ -177,12 +150,131 @@ int samp_new(int K, arma::vec log_alloc){
   arma::vec prob = log_sum_exp(log_alloc);
   
   // Sample from the list of the active cluster using the aloocation probability 
-  // arma::vec active_prob = alloc_list["active_clus"];
-  // int K = prob.size();
-  
   Rcpp::IntegerVector x_index = Rcpp::seq(1, K);
   Rcpp::NumericVector norm_prob = Rcpp::wrap(prob);
   Rcpp::IntegerVector x = Rcpp::sample(x_index, 1, false, norm_prob);
+  return x[0];
+}
+
+// [[Rcpp::export]]
+arma::mat fmm_mod(int t, int K, arma::vec old_assign, arma::vec xi, arma::vec y, 
+                  arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, 
+                  arma::vec mu0){
+  
+  /* Description: This function will perform a finite mixture model.
+   * Output: a matrix of the cluster assignment. Each row represents each 
+   *         iteration and each column represent each observation.
+   * Input: Number of iteration (t), Maximum possible cluster (K), 
+   *        the previous assignment (old_assign), cluster concentration (xi), 
+   *        data (y), data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+   */
+  
+  arma::mat final_result = -1 * arma::ones(t, y.size());
+  
+  arma::vec new_assign(old_assign);
+  for(int iter = 0; iter < t; ++iter){
+    
+    // Reassign the observation
+    for(int i = 0; i < new_assign.size(); ++i){
+      arma::vec obs_i_alloc = fmm_log_alloc_prob(K, i, new_assign, xi, y, 
+                                                 a_sigma, b_sigma, lambda, mu0);
+      new_assign.row(i).fill(fmm_samp_new(K, obs_i_alloc));
+    }
+    
+    // Record the result for the iteration #iter
+    final_result.row(iter) = new_assign.t();
+  }
+  
+  return final_result;
+}
+
+// Updated Code: ---------------------------------------------------------------
+// [[Rcpp::export]]
+Rcpp::List log_alloc_prob(int i, arma::vec old_assign, arma::vec xi, 
+                          arma::vec y, arma::vec a_sigma, arma::vec b_sigma, 
+                          arma::vec lambda, arma::vec mu0){
+  
+  /* Description: This function is an adjusted `fmm_log_alloc_prob` function. 
+   *              Instead of calculating the log allocation probability for all 
+   *              possible cluster, we calculate only active clusters.
+   * Output: The list of 2 vectors: (1) log of the allocation probability 
+   *         for each cluster and (2) the list of active cluster.
+   * Input: Index of the current observation (i),
+   *        current cluster assignment (old_assign), cluster concentration (xi),
+   *        data (y), data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+   */
+  
+  Rcpp::List result;
+  
+  // Get the list of the active clusters
+  arma::uvec active_clus;
+  active_clus = arma::conv_to<arma::uvec>::from(arma::unique(old_assign));
+  result["active_clus"] = active_clus;
+  
+  int K = active_clus.size();
+  arma::vec log_alloc = 100 * arma::ones(K);
+  
+  // Create the data vector which exclude the observation i.
+  arma::vec y_not_i(y);
+  y_not_i.shed_row(i);
+  arma::vec c_not_i(old_assign);
+  c_not_i.shed_row(i);
+  
+  // Calculate the log allocation probability for each cluster
+  for(int k = 0; k < K; ++k){
+    int c = active_clus[k]; // select the current cluster
+    arma::vec y_c(y_not_i);
+    y_c.shed_rows(arma::find(c_not_i != c)); // data point in the current c
+    int n_k = y_c.size(); // number of element in cluster c
+
+    // Calculate the posterior parameters
+    double a_n = a_sigma[(c-1)] + (n_k/2);
+    double V_n = 1/(n_k + lambda[(c-1)]);
+    double sum_y = 0.0;
+    double b_n = b_sigma[(c-1)]; // if n_k = 0 then b_n = b_k;
+    if(n_k != 0){
+      sum_y += arma::accu(y_c);
+      b_n += (0.5 * (n_k - 1) * arma::var(y_c)); // if n_k = 1, drop the second terms of b_k
+      b_n += (0.5 * (n_k * lambda[(c-1)]) / (n_k + lambda[(c-1)])) * std::pow((sum_y/n_k) - mu0[(c-1)], 2.0);
+    }
+    double mu_n = (sum_y + ((lambda % mu0)[(c-1)]))/(n_k + lambda[(c-1)]);
+    
+    // The posterior predictive is scaled-t distribution.
+    double sd_t = std::pow(b_n * (1 + V_n) / a_n, 0.5);
+    double log_p = R::dt((y[i] - mu_n)/sd_t, (2 * a_n), 1);
+    log_p -= std::log(sd_t);
+    
+    // The allocation probability needs to include log(n_k + xi_k).
+    log_p += std::log(n_k + xi[(c-1)]);
+    
+    log_alloc.row(k).fill(log_p);
+  }
+  
+  result["log_alloc"] = log_alloc;
+  return result;
+}
+
+// [[Rcpp::export]]
+int samp_new(Rcpp::List log_prob_list){
+  
+  /* Description: This function is an adjusted `fmm_samp_new` function. Instead 
+   *              of considering for all possible cluster, we consider only 
+   *              active clusters.
+   * Output: new cluster assignment for the observation #i
+   * Input: a list object resulted from the `log_alloc_prob` function. 
+   *        (log_prob_list)
+   */
+  
+  // Convert the log probability back to probability using log-sum-exp trick
+  arma::vec log_alloc = log_prob_list["log_alloc"];
+  arma::vec prob = log_sum_exp(log_alloc);
+  
+  // Sample from the list of the active cluster using the aloocation probability 
+  arma::vec ac = log_prob_list["active_clus"];
+  Rcpp::IntegerVector active_clus = Rcpp::wrap(ac);
+  Rcpp::NumericVector norm_prob = Rcpp::wrap(prob);
+  Rcpp::IntegerVector x = Rcpp::sample(active_clus, 1, false, norm_prob);
+  
   return x[0];
 }
 
@@ -245,37 +337,47 @@ int samp_new(int K, arma::vec log_alloc){
 
 
 // Step 2: Allocate the observation to the existing clusters: ------------------
-// Finite Mixture Model
 // [[Rcpp::export]]
-arma::mat fmm_mod(int t, int K, arma::vec old_assign, arma::vec xi, arma::vec y, 
-                  arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, 
-                  arma::vec mu0){
+Rcpp::List our_allocate(arma::vec old_assign, arma::vec xi, arma::vec y, 
+                        arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, 
+                        arma::vec mu0, arma::vec old_alpha){
   
-  /* Description: This function will perform a finite mixture model.
-   * Output: a matrix of the cluster assignment. Each row represents each 
-   *         iteration and each column represent each observation.
-   * Input: Number of iteration (t), Maximum possible cluster (K), 
-   *        the previous assignment (old_assign), cluster concentration (xi), 
-   *        data (y), data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+  /* Description: This function will perform an adjusted finite mixture model 
+   *              for our model. It will reallocate the observation, and adjust 
+   *              the cluster space (alpha) in the end.
+   * Output: The list of 2 vectors: (1) vector of an updated cluster assignment
+   *         and (2) vector of an updated cluster space (alpha).
+   * Input: Previous assignment (old_assign), cluster concentration (xi), 
+   *        data (y), data hyperparameters (a_sigma, b_sigma, lambda, mu0), 
+   *        cluster space parameter (old_alpha)
    */
   
-  arma::mat final_result = -1 * arma::ones(t, y.size());
+  Rcpp::List result;
   
   arma::vec new_assign(old_assign);
-  for(int iter = 0; iter < t; ++iter){
-    
-    // Reassign the observation
-    for(int i = 0; i < new_assign.size(); ++i){
-      arma::vec obs_i_alloc = log_alloc_prob(K, i, new_assign, xi, y, a_sigma, 
-                                             b_sigma, lambda, mu0);
-      new_assign.row(i).fill(samp_new(K, obs_i_alloc));
-    }
-    
-    // Record the result for the iteration #iter
-    final_result.row(iter) = new_assign.t();
+  arma::vec new_alpha(old_alpha);
+  arma::vec old_unique = arma::unique(old_assign);
+  
+  // Reassign the observation
+  for(int i = 0; i < new_assign.size(); ++i){
+    Rcpp::List obs_i_alloc = log_alloc_prob(i, new_assign, xi, y, a_sigma, 
+                                            b_sigma, lambda, mu0);
+    new_assign.row(i).fill(samp_new(obs_i_alloc));
   }
-
-  return final_result;
+  
+  // Update alpha vector
+  for(int k = 0; k < old_unique.size(); ++k){
+    int c = old_unique[k];
+    arma::uvec n_c = arma::find(new_assign == c);
+    if(n_c.size() == 0){
+      new_alpha.row(k).fill(0.0);
+    }
+  }
+  
+  result["new_assign"] = new_assign;
+  result["new_alpha"] = new_alpha;
+  
+  return result;
 }
 
 // Step 3: Split-Merge: --------------------------------------------------------

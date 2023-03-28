@@ -9,20 +9,28 @@ log_sum_exp <- function(log_unnorm_prob) {
     .Call(`_ClusterNormal_log_sum_exp`, log_unnorm_prob)
 }
 
-rdirichlet_cpp <- function(num_samples, alpha_m) {
-    .Call(`_ClusterNormal_rdirichlet_cpp`, num_samples, alpha_m)
+fmm_log_alloc_prob <- function(K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_fmm_log_alloc_prob`, K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
 }
 
-log_alloc_prob <- function(K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_log_alloc_prob`, K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
-}
-
-samp_new <- function(K, log_alloc) {
-    .Call(`_ClusterNormal_samp_new`, K, log_alloc)
+fmm_samp_new <- function(K, log_alloc) {
+    .Call(`_ClusterNormal_fmm_samp_new`, K, log_alloc)
 }
 
 fmm_mod <- function(t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
     .Call(`_ClusterNormal_fmm_mod`, t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
+}
+
+log_alloc_prob <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_log_alloc_prob`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
+}
+
+samp_new <- function(log_prob_list) {
+    .Call(`_ClusterNormal_samp_new`, log_prob_list)
+}
+
+our_allocate <- function(old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {
+    .Call(`_ClusterNormal_our_allocate`, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha)
 }
 
 rcpparma_hello_world <- function() {
