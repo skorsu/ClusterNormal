@@ -85,12 +85,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // log_alloc_prob
-Rcpp::List log_alloc_prob(int i, arma::vec old_assign, arma::vec xi, arma::vec y, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, arma::vec mu0);
-RcppExport SEXP _ClusterNormal_log_alloc_prob(SEXP iSEXP, SEXP old_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP mu0SEXP) {
+arma::mat log_alloc_prob(int i, arma::vec active_clus, arma::vec old_assign, arma::vec xi, arma::vec y, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, arma::vec mu0);
+RcppExport SEXP _ClusterNormal_log_alloc_prob(SEXP iSEXP, SEXP active_clusSEXP, SEXP old_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP mu0SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type i(iSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type active_clus(active_clusSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type old_assign(old_assignSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
@@ -98,18 +99,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type b_sigma(b_sigmaSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type mu0(mu0SEXP);
-    rcpp_result_gen = Rcpp::wrap(log_alloc_prob(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0));
+    rcpp_result_gen = Rcpp::wrap(log_alloc_prob(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0));
     return rcpp_result_gen;
 END_RCPP
 }
 // samp_new
-int samp_new(Rcpp::List log_prob_list);
-RcppExport SEXP _ClusterNormal_samp_new(SEXP log_prob_listSEXP) {
+int samp_new(arma::mat log_prob_mat);
+RcppExport SEXP _ClusterNormal_samp_new(SEXP log_prob_matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type log_prob_list(log_prob_listSEXP);
-    rcpp_result_gen = Rcpp::wrap(samp_new(log_prob_list));
+    Rcpp::traits::input_parameter< arma::mat >::type log_prob_mat(log_prob_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(samp_new(log_prob_mat));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -181,7 +182,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_fmm_log_alloc_prob", (DL_FUNC) &_ClusterNormal_fmm_log_alloc_prob, 9},
     {"_ClusterNormal_fmm_samp_new", (DL_FUNC) &_ClusterNormal_fmm_samp_new, 2},
     {"_ClusterNormal_fmm_mod", (DL_FUNC) &_ClusterNormal_fmm_mod, 9},
-    {"_ClusterNormal_log_alloc_prob", (DL_FUNC) &_ClusterNormal_log_alloc_prob, 8},
+    {"_ClusterNormal_log_alloc_prob", (DL_FUNC) &_ClusterNormal_log_alloc_prob, 9},
     {"_ClusterNormal_samp_new", (DL_FUNC) &_ClusterNormal_samp_new, 1},
     {"_ClusterNormal_our_allocate", (DL_FUNC) &_ClusterNormal_our_allocate, 8},
     {"_ClusterNormal_rcpparma_hello_world", (DL_FUNC) &_ClusterNormal_rcpparma_hello_world, 0},

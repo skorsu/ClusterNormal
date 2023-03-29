@@ -21,12 +21,12 @@ fmm_mod <- function(t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
     .Call(`_ClusterNormal_fmm_mod`, t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
 }
 
-log_alloc_prob <- function(i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_log_alloc_prob`, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
+log_alloc_prob <- function(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_log_alloc_prob`, i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
 }
 
-samp_new <- function(log_prob_list) {
-    .Call(`_ClusterNormal_samp_new`, log_prob_list)
+samp_new <- function(log_prob_mat) {
+    .Call(`_ClusterNormal_samp_new`, log_prob_mat)
 }
 
 our_allocate <- function(old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {
