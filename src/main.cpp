@@ -376,84 +376,118 @@ Rcpp::List our_allocate(arma::vec old_assign, arma::vec xi, arma::vec y,
 }
 
 // Step 3: Split-Merge: --------------------------------------------------------
-// Rcpp::List our_SM(int K, arma::vec old_assign, arma::vec old_alpha, 
-//                   arma::vec xi, arma::vec y, arma::vec mu0, arma::vec a_sigma, 
-//                   arma::vec b_sigma, arma::vec lambda, double a_theta, 
-//                   double b_theta, int sm_iter){
-//   
-//   /* Description: --
-//    * Output: --
-//    * Input: --
-//    */
-//   
-//   Rcpp::List result;
-//   
-//   // (1) Perform a Launch step
-//   arma::vec launch_assign(old_assign);
-//   arma::vec launch_alpha(old_alpha);
-//   Rcpp::IntegerVector active_clus = Rcpp::wrap((arma::unique(launch_assign)));
-//   Rcpp::IntegerVector all_clus = Rcpp::seq(1, K);
-//   Rcpp::IntegerVector inactive_clus = Rcpp::setdiff(all_clus, active_clus);
-//   int split_ind = -1; // If we split, split_ind = 1. If we merge, split_ind = 0.
-// 
-//   // (1.1) Choose two observations to decide between split and merge.
-//   Rcpp::IntegerVector n_vec = Rcpp::seq(0, launch_assign.size() - 1); // index of the all observations
-//   Rcpp::IntegerVector index_samp = Rcpp::sample(n_vec, 2);
-//   
-//   // (1.1 Extra) If our clusters are active, we cannot split further.
-//   while(active_clus.size() == K and // incorrect here.
-//           (launch_assign[index_samp[0]] == launch_assign[index_samp[1]])){
-//     index_samp = Rcpp::sample(n_vec, 2); // sampling until we have to merge
-//   }
-//   
-//   // (1.2) Create a set S := {same cluster as index_samp, but not index_samp}
-//   arma::uvec S_index = arma::find((launch_assign == launch_assign[index_samp[0]]) 
-//                                     or (launch_assign == launch_assign[index_samp[1]]));
-//   S_index.shed_rows(arma::find((S_index == index_samp[0]) or (S_index == index_samp[1])));
-//   
-//   // (1.3) Reindex followed by the SM paper
-//   arma::uvec S_clus(2);
-//   if(launch_assign[index_samp[0]] == launch_assign[index_samp[1]]){
-//     // If they are from the same cluster, we will split.
-//     split_ind = 1;
-//     // Find the candidate cluster from the inactive list.
-//     int candi_clus = Rcpp::sample(inactive_clus, 1)[0];
-//     launch_alpha.row(candi_clus - 1).fill(R::rgamma(xi[(candi_clus - 1)], 1.0));
-//     launch_assign[index_samp[0]] = candi_clus;
-//     S_clus[0] = launch_assign[index_samp[0]];
-//     S_clus[1] = launch_assign[index_samp[1]];
-//   } else{
-//     split_ind = 0;
-//   }
-//   
-//   S_clus[0] = launch_assign[index_samp[0]];
-//   S_clus[1] = launch_assign[index_samp[1]];
-//   
-//   // (1.4) Create an initial step
-//   arma::uvec v1 = arma::conv_to<arma::uvec>::from(arma::round(arma::randu(S_index.size())));
-//   arma::vec init_launch = arma::conv_to<arma::vec>::from(S_clus.rows(v1));
-//   
-//   std::cout << init_launch << std::endl;
-// 
-//   // (1.5) Perform a launch step
-//   // Note: This is not the same as step 2 allocation step. We allowed them to go back and
-//   arma::vec S_data = y.rows(S_index);
-//   for(int t = 0; t < sm_iter; ++t){
-//     for(int i = 0; i < S_index.size(); ++i){
-//       Rcpp::List obs_i_alloc = log_alloc_prob(i, init_launch, xi, S_data, 
-//                                               a_sigma, b_sigma, lambda, mu0);
-//       init_launch.row(i).fill(samp_new(obs_i_alloc));
-//     }
-//   }
-//   
-//   std::cout << init_launch << std::endl;
-//   
-//   // (2) Perform a Split-Merge step
-//   
-//   // (3) Acceptance Step (MH algorithm)
-//   
-//   return result;
-// }
+// [[Rcpp::export]]
+Rcpp::List our_SM(int K, arma::vec old_assign, arma::vec old_alpha,
+                  arma::vec xi, arma::vec y, arma::vec mu0, arma::vec a_sigma,
+                  arma::vec b_sigma, arma::vec lambda, double a_theta,
+                  double b_theta, int sm_iter){
+
+  /* Description: --
+   * Output: --
+   * Input: --
+   */
+
+  Rcpp::List result;
+
+  // (1) Perform a Launch step
+  arma::vec launch_assign(old_assign);
+  arma::vec launch_alpha(old_alpha);
+  Rcpp::IntegerVector active_clus = Rcpp::wrap((arma::unique(launch_assign)));
+  Rcpp::IntegerVector all_clus = Rcpp::seq(1, K);
+  Rcpp::IntegerVector inactive_clus = Rcpp::setdiff(all_clus, active_clus);
+  int split_ind = -1; // If we split, split_ind = 1. If we merge, split_ind = 0.
+
+  // (1.1) Choose two observations to decide between split and merge.
+  Rcpp::IntegerVector n_vec = Rcpp::seq(0, launch_assign.size() - 1); // index of the all observations
+  Rcpp::IntegerVector index_samp = Rcpp::sample(n_vec, 2);
+
+  // (1.1 Extra) If our clusters are active, we cannot split further.
+  while(active_clus.size() == K and // incorrect here.
+          (launch_assign[index_samp[0]] == launch_assign[index_samp[1]])){
+    index_samp = Rcpp::sample(n_vec, 2); // sampling until we have to merge
+  }
+
+  // (1.2) Create a set S := {same cluster as index_samp, but not index_samp}
+  arma::uvec S_index = arma::find((launch_assign == launch_assign[index_samp[0]])
+                                            or (launch_assign == launch_assign[index_samp[1]]));
+  S_index.shed_rows(arma::find((S_index == index_samp[0]) or (S_index == index_samp[1])));
+
+  // (1.3) Reindex followed by the SM paper
+  arma::vec S_clus(2);
+  if(launch_assign[index_samp[0]] == launch_assign[index_samp[1]]){
+    // If they are from the same cluster, we will split.
+    split_ind = 1;
+    // Find the candidate cluster from the inactive list.
+    int candi_clus = Rcpp::sample(inactive_clus, 1)[0];
+    launch_alpha.row(candi_clus - 1).fill(R::rgamma(xi[(candi_clus - 1)], 1.0));
+    launch_assign[index_samp[0]] = candi_clus; // Set ci to a new cluster.
+  } else{
+    split_ind = 0;
+  }
+
+  S_clus[0] = launch_assign[index_samp[0]]; // This is ci
+  S_clus[1] = launch_assign[index_samp[1]]; // This is cj
+
+  // (1.4) Create an initial step
+  launch_assign.row(index_samp[0]).fill(S_clus[0]);
+  launch_assign.row(index_samp[1]).fill(S_clus[1]);
+  for(int i = 0; i < S_index.size(); ++i){
+    // Randomly assign the observation of S_index to one of the ci or cj.
+    launch_assign.row(S_index[i]).fill(S_clus[round(arma::randu())]);
+  }
+  
+  // (1.5) Perform a launch step
+  for(int t = 0; t < sm_iter; ++t){
+    for(int i = 0; i < S_index.size(); ++i){
+      arma::mat obs_i_alloc = log_alloc_prob(S_index[i], S_clus, launch_assign, 
+                                             xi, y, a_sigma, b_sigma, lambda, mu0);
+      launch_assign.row(S_index[i]).fill(samp_new(obs_i_alloc));
+    }
+  }
+  
+  // (1.6) Adjust the alpha vector for the launch step
+  for(int k = 1; k <= K; ++k){
+    arma::uvec n_c = arma::find(launch_assign == k);
+    if(n_c.size() == 0){
+      launch_alpha.row(k-1).fill(0.0);
+    }
+  }
+  
+  // (2) Split-Merge
+  // (2.1) Perform a Split-Merge step
+  arma::vec proposed_assign(launch_assign);
+  arma::vec proposed_alpha(launch_alpha);
+
+  if(split_ind == 0){
+    // Merge
+    proposed_assign.rows(S_index).fill(S_clus[1]);
+    proposed_assign.row(index_samp[0]).fill(S_clus[1]);
+    proposed_assign.row(index_samp[1]).fill(S_clus[1]);
+  } else {
+    // Split: Perform another round of allocation of S_index.
+    for(int i = 0; i < S_index.size(); ++i){
+      arma::mat obs_i_alloc = log_alloc_prob(S_index[i], S_clus, proposed_assign, 
+                                             xi, y, a_sigma, b_sigma, lambda, mu0);
+      proposed_assign.row(S_index[i]).fill(samp_new(obs_i_alloc));
+    }
+  }
+  
+  // (2.2) Adjust the alpha vector for the launch step
+  for(int k = 1; k <= K; ++k){
+    arma::uvec n_c = arma::find(proposed_assign == k);
+    if(n_c.size() == 0){
+      proposed_alpha.row(k-1).fill(0.0);
+    }
+  }
+
+  // (3) Acceptance Step (MH algorithm)
+  // Note: Compare proposed with launch
+  
+  result["split_ind"] = split_ind;
+  result["new_assign"] = proposed_assign;
+  result["new_alpha"] = proposed_alpha;
+  return result;
+}
 
 // * Univariate 
 // Rcpp::List uni_split_merge(int K, arma::vec old_assign, arma::vec alpha,

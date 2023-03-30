@@ -33,6 +33,10 @@ our_allocate <- function(old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_a
     .Call(`_ClusterNormal_our_allocate`, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha)
 }
 
+our_SM <- function(K, old_assign, old_alpha, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
+    .Call(`_ClusterNormal_our_SM`, K, old_assign, old_alpha, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
+}
+
 rcpparma_hello_world <- function() {
     .Call(`_ClusterNormal_rcpparma_hello_world`)
 }
