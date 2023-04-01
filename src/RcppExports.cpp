@@ -114,6 +114,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// marginal_y
+double marginal_y(arma::vec clus_assign, arma::vec y, arma::vec mu0, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda);
+RcppExport SEXP _ClusterNormal_marginal_y(SEXP clus_assignSEXP, SEXP ySEXP, SEXP mu0SEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type clus_assign(clus_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu0(mu0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type a_sigma(a_sigmaSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type b_sigma(b_sigmaSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(marginal_y(clus_assign, y, mu0, a_sigma, b_sigma, lambda));
+    return rcpp_result_gen;
+END_RCPP
+}
 // our_allocate
 Rcpp::List our_allocate(arma::vec old_assign, arma::vec xi, arma::vec y, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, arma::vec mu0, arma::vec old_alpha);
 RcppExport SEXP _ClusterNormal_our_allocate(SEXP old_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP mu0SEXP, SEXP old_alphaSEXP) {
@@ -206,6 +222,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_fmm_mod", (DL_FUNC) &_ClusterNormal_fmm_mod, 9},
     {"_ClusterNormal_log_alloc_prob", (DL_FUNC) &_ClusterNormal_log_alloc_prob, 9},
     {"_ClusterNormal_samp_new", (DL_FUNC) &_ClusterNormal_samp_new, 1},
+    {"_ClusterNormal_marginal_y", (DL_FUNC) &_ClusterNormal_marginal_y, 6},
     {"_ClusterNormal_our_allocate", (DL_FUNC) &_ClusterNormal_our_allocate, 8},
     {"_ClusterNormal_our_SM", (DL_FUNC) &_ClusterNormal_our_SM, 12},
     {"_ClusterNormal_rcpparma_hello_world", (DL_FUNC) &_ClusterNormal_rcpparma_hello_world, 0},

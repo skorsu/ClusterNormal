@@ -29,6 +29,10 @@ samp_new <- function(log_prob_mat) {
     .Call(`_ClusterNormal_samp_new`, log_prob_mat)
 }
 
+marginal_y <- function(clus_assign, y, mu0, a_sigma, b_sigma, lambda) {
+    .Call(`_ClusterNormal_marginal_y`, clus_assign, y, mu0, a_sigma, b_sigma, lambda)
+}
+
 our_allocate <- function(old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {
     .Call(`_ClusterNormal_our_allocate`, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha)
 }

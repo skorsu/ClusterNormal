@@ -273,6 +273,42 @@ int samp_new(arma::mat log_prob_mat){
   return x[0];
 }
 
+// [[Rcpp::export]]
+double marginal_y(arma::vec clus_assign, arma::vec y, arma::vec mu0, 
+                  arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda){
+  
+  /* Description: This will calculate the log marginal probability of the data.
+   * Output: log marginal probability of the data.
+   * Input: list of the active cluster (clus_assign), data (y),
+   *        data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+   */
+  
+  double result = 0.0;
+  
+  // Select the parameter for each observation based on its cluster.
+  arma::vec mu0_k = mu0.rows(arma::conv_to<arma::uvec>::from(clus_assign - 1));
+  arma::vec a_sigma_k = a_sigma.rows(arma::conv_to<arma::uvec>::from(clus_assign - 1));
+  arma::vec b_sigma_k = b_sigma.rows(arma::conv_to<arma::uvec>::from(clus_assign - 1));
+  arma::vec lambda_k = lambda.rows(arma::conv_to<arma::uvec>::from(clus_assign - 1));
+  
+  // Intermediate Calculation
+  arma::vec denom(b_sigma_k);
+  denom += 0.5 * (lambda_k % arma::pow(y - mu0_k, 2) / (lambda_k + 1));
+  
+  // Calculate the log marginal for each observation
+  arma::vec marginal_vec(y.size(), arma::fill::zeros);
+  marginal_vec -= (0.5 * std::log(2 * pi));
+  marginal_vec += (0.5 * arma::log(lambda_k));
+  marginal_vec -= (0.5 * arma::log(lambda_k + 1));
+  marginal_vec += arma::lgamma(0.5 + a_sigma_k);
+  marginal_vec -= arma::lgamma(a_sigma_k);
+  marginal_vec += (a_sigma_k % arma::log(b_sigma_k));
+  marginal_vec -= (a_sigma_k + 0.5) % arma::log(denom);
+  
+  result = arma::accu(marginal_vec);
+  return result;
+}
+
 // Step 1: Update the cluster space: -------------------------------------------
 // * Note: Omitted this step for now
 
