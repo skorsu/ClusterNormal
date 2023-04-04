@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-        "file_last_write": 1680414541.0,
+        "file_last_write": 1680624568.0,
         "definitions": [
             {
                 "usr": "c:@F@init_seq#I#I#",
@@ -9,7 +9,7 @@
                 "parent_name": "",
                 "name": "init_seq(int, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 16,
+                "line": 12,
                 "column": 11,
                 "hidden": false
             },
@@ -19,7 +19,7 @@
                 "parent_name": "",
                 "name": "log_sum_exp(arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 27,
+                "line": 23,
                 "column": 11,
                 "hidden": false
             },
@@ -29,7 +29,7 @@
                 "parent_name": "",
                 "name": "adjust_alpha(int, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 52,
+                "line": 48,
                 "column": 11,
                 "hidden": false
             },
@@ -39,7 +39,7 @@
                 "parent_name": "",
                 "name": "fmm_log_alloc_prob(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 70,
+                "line": 66,
                 "column": 11,
                 "hidden": false
             },
@@ -49,7 +49,7 @@
                 "parent_name": "",
                 "name": "fmm_samp_new(int, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 137,
+                "line": 133,
                 "column": 5,
                 "hidden": false
             },
@@ -59,7 +59,7 @@
                 "parent_name": "",
                 "name": "fmm_mod(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 160,
+                "line": 156,
                 "column": 11,
                 "hidden": false
             },
@@ -69,7 +69,7 @@
                 "parent_name": "",
                 "name": "log_alloc_prob(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 193,
+                "line": 189,
                 "column": 11,
                 "hidden": false
             },
@@ -79,7 +79,7 @@
                 "parent_name": "",
                 "name": "samp_new(arma::mat)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 253,
+                "line": 249,
                 "column": 5,
                 "hidden": false
             },
@@ -89,7 +89,7 @@
                 "parent_name": "",
                 "name": "log_marginal_y(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 277,
+                "line": 273,
                 "column": 8,
                 "hidden": false
             },
@@ -99,7 +99,7 @@
                 "parent_name": "",
                 "name": "log_cluster_param(arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 313,
+                "line": 309,
                 "column": 8,
                 "hidden": false
             },
@@ -109,7 +109,7 @@
                 "parent_name": "",
                 "name": "log_gamma_cluster(arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 335,
+                "line": 331,
                 "column": 8,
                 "hidden": false
             },
@@ -119,7 +119,7 @@
                 "parent_name": "",
                 "name": "our_allocate(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 412,
+                "line": 408,
                 "column": 12,
                 "hidden": false
             },
@@ -129,7 +129,7 @@
                 "parent_name": "",
                 "name": "our_SM(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 456,
+                "line": 452,
                 "column": 12,
                 "hidden": false
             },
@@ -139,7 +139,7 @@
                 "parent_name": "",
                 "name": "our_model(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 635,
+                "line": 597,
                 "column": 12,
                 "hidden": false
             }
