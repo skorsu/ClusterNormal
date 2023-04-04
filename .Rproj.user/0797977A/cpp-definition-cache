@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-        "file_last_write": 1680241637.0,
+        "file_last_write": 1680414541.0,
         "definitions": [
             {
                 "usr": "c:@F@init_seq#I#I#",
@@ -84,12 +84,32 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@marginal_y#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#",
+                "usr": "c:@F@log_marginal_y#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "marginal_y(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "name": "log_marginal_y(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
                 "line": 277,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_cluster_param#$@N@arma@S@Col>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_cluster_param(arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 313,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_gamma_cluster#$@N@arma@S@Col>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_gamma_cluster(arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 335,
                 "column": 8,
                 "hidden": false
             },
@@ -99,7 +119,7 @@
                 "parent_name": "",
                 "name": "our_allocate(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 363,
+                "line": 412,
                 "column": 12,
                 "hidden": false
             },
@@ -109,7 +129,17 @@
                 "parent_name": "",
                 "name": "our_SM(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 407,
+                "line": 456,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@our_model#I#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#d#d#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "our_model(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 635,
                 "column": 12,
                 "hidden": false
             }
