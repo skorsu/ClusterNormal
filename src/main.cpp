@@ -271,7 +271,7 @@ int samp_new(arma::mat log_prob_mat){
 
 // [[Rcpp::export]]
 double log_marginal_y(arma::vec clus_assign, arma::vec y, arma::vec mu0, 
-                  arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda){
+                      arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda){
   
   /* Description: This will calculate the log marginal probability of the data.
    * Output: log marginal probability of the data.
@@ -281,27 +281,35 @@ double log_marginal_y(arma::vec clus_assign, arma::vec y, arma::vec mu0,
   
   double result = 0.0;
   
-  // Select the parameter for each observation based on its cluster.
-  arma::vec mu0_k = mu0.rows(arma::conv_to<arma::uvec>::from(clus_assign - 1));
-  arma::vec a_sigma_k = a_sigma.rows(arma::conv_to<arma::uvec>::from(clus_assign - 1));
-  arma::vec b_sigma_k = b_sigma.rows(arma::conv_to<arma::uvec>::from(clus_assign - 1));
-  arma::vec lambda_k = lambda.rows(arma::conv_to<arma::uvec>::from(clus_assign - 1));
+  // Find the active cluster
+  arma::uvec active_list = arma::conv_to<arma::uvec>::from(arma::unique(clus_assign));
+  int K = active_list.size();
   
-  // Intermediate Calculation
-  arma::vec denom(b_sigma_k);
-  denom += 0.5 * (lambda_k % arma::pow(y - mu0_k, 2) / (lambda_k + 1));
+  // Calculate the log of the marginal probability of Y
+  for(int i = 0; i < K; ++i){
+    int current_clus = active_list[i];
+    
+    // Parameter for the corresponding cluster
+    double mu = mu0[current_clus - 1]; 
+    double a0 = a_sigma[current_clus - 1];
+    double b0 = b_sigma[current_clus - 1];
+    double lmb = lambda[current_clus - 1];
+    
+    // Calculate the posterior parameter
+    arma::vec yk = y.rows(arma::find(clus_assign == current_clus));
+    double nk = yk.size();
+    double an = a0 + (nk/2);
+    double Vn_inv = (1/lmb) + nk;
+    double mn = (((1/lmb) * mu) + arma::accu(yk))/((1/lmb) + nk);
+    double bn = b0 + (0.5 * ((std::pow(mu, 2.0) * (1/lmb)) + 
+                      (arma::accu(arma::pow(yk, 2))) - 
+                      (std::pow(mn, 2.0) * Vn_inv)));
+    
+    result += (std::lgamma(an) - std::lgamma(a0) - (0.5 * std::log(Vn_inv)) - 
+      (0.5 * std::log(lmb)) + (a0 * std::log(b0)) - (an * std::log(bn)) -
+      ((nk/2) * std::log(2 * pi)));
+  }
   
-  // Calculate the log marginal for each observation
-  arma::vec marginal_vec(y.size(), arma::fill::zeros);
-  marginal_vec -= (0.5 * std::log(2 * pi));
-  marginal_vec += (0.5 * arma::log(lambda_k));
-  marginal_vec -= (0.5 * arma::log(lambda_k + 1));
-  marginal_vec += arma::lgamma(0.5 + a_sigma_k);
-  marginal_vec -= arma::lgamma(a_sigma_k);
-  marginal_vec += (a_sigma_k % arma::log(b_sigma_k));
-  marginal_vec -= (a_sigma_k + 0.5) % arma::log(denom);
-  
-  result = arma::accu(marginal_vec);
   return result;
 }
 
@@ -314,15 +322,18 @@ double log_cluster_param(arma::vec clus_assign, arma::vec alpha){
    *        cluster parameter (alpha)
    */
   
-  arma::uvec unique_clus = arma::conv_to<arma::uvec>::from(arma::unique(clus_assign)); 
-  double result = -(clus_assign.size() * std::log(arma::accu(alpha.rows(unique_clus - 1))));
-  result += R::lgammafn(clus_assign.size() + 1);
+  arma::uvec unique_clus = arma::conv_to<arma::uvec>::from(arma::unique(clus_assign));
+  arma::vec size_nk(unique_clus.size(), arma::fill::value(-30));
+  double result = 0.0;
   
   for(int k = 0; k < unique_clus.size(); ++k){
     arma::uvec nk = arma::find(clus_assign == unique_clus[k]);
     result += (nk.size() * std::log(alpha[unique_clus[k] - 1]));
-    result -= R::lgammafn(nk.size() + 1);
+    size_nk[k] = nk.size() + 1; // plus 1 for applying gamma function
   }
+  
+  result += (::lgamma(clus_assign.size() + 1)); // plus 1 for applying gamma function
+  result -= arma::accu(arma::lgamma(size_nk)); 
   
   return result;
 }
@@ -585,6 +596,7 @@ Rcpp::List our_SM(int K, arma::vec old_assign, arma::vec old_alpha,
   }
   
   result["split_ind"] = split_ind;
+  result["log_A"] = log_A;
   result["accept_new"] = accept_new;
   result["new_assign"] = new_assign;
   result["new_alpha"] = new_alpha;
@@ -597,11 +609,20 @@ Rcpp::List our_SM(int K, arma::vec old_assign, arma::vec old_alpha,
 Rcpp::List our_model(int iter, int K, arma::vec init_assign, arma::vec xi, 
                      arma::vec y, arma::vec mu0, arma::vec a_sigma,
                      arma::vec b_sigma, arma::vec lambda, double a_theta,
-                     double b_theta, int sm_iter){
+                     double b_theta, int sm_iter, int print_iter){
   
-  /* Description: -
-   * Output: -
-   * Input: -
+  /* Description: This function runs our model. 
+   * Output: A list of the result consisted of (1) the cluster assignment for 
+   *         each iterations (iter x size of data matrix) (2) split/merge 
+   *         decision for each iteration (split_or_merge) (3) accept or reject 
+   *         SM status (sm_status)0
+   * Input: Number of iteration for runiing the model (iter) Maximum possible 
+   *        cluster (K), the initial assignment (init_assign), 
+   *        cluster concentration (xi), data (y), 
+   *        data hyperparameters (mu0, a_sigma, b_sigma, lambda),
+   *        spike-and-slab hyperparameters (a_theta, b_theta), 
+   *        number of iteration for the launch step (sm_iter), 
+   *        progress report (print_iter)
    */
   
   Rcpp::List result;
@@ -637,6 +658,12 @@ Rcpp::List our_model(int iter, int K, arma::vec init_assign, arma::vec xi,
     
     init_assign = sm_assign;
     init_alpha = sm_alpha;
+    
+    // Print the result
+    if(((i + 1) - (floor((i + 1)/print_iter) * print_iter)) == 0){
+      std::cout << "Iter: " << (i+1) << " - Done!" << std::endl;
+    }
+    
   }
   
   result["iter_assign"] = iter_assign.t();

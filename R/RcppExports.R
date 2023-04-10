@@ -49,8 +49,8 @@ our_SM <- function(K, old_assign, old_alpha, xi, y, mu0, a_sigma, b_sigma, lambd
     .Call(`_ClusterNormal_our_SM`, K, old_assign, old_alpha, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
 }
 
-our_model <- function(iter, K, init_assign, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter) {
-    .Call(`_ClusterNormal_our_model`, iter, K, init_assign, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter)
+our_model <- function(iter, K, init_assign, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, print_iter) {
+    .Call(`_ClusterNormal_our_model`, iter, K, init_assign, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, print_iter)
 }
 
 rcpparma_hello_world <- function() {
