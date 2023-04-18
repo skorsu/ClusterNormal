@@ -598,12 +598,9 @@ Rcpp::List our_SM(int K, arma::vec old_assign, arma::vec old_alpha,
   }
   
   result["split_ind"] = split_ind;
-  result["log_A"] = log_A;
   result["accept_new"] = accept_new;
   result["new_assign"] = new_assign;
   result["new_alpha"] = new_alpha;
-  result["proposed_assign"] = proposed_assign;
-  result["launch_assign"] = launch_assign;
   
   return result;
 }
@@ -645,12 +642,8 @@ Rcpp::List our_model(int iter, int K, arma::vec init_assign, arma::vec xi,
   
   // Create vectors/matrices for storing the final result 
   arma::mat iter_assign(y.size(), iter, arma::fill::value(-1));
-  arma::mat all_alpha(K, iter, arma::fill::value(-1));
-  arma::mat iter_launch(y.size(), iter, arma::fill::value(-1));
-  arma::mat iter_proposed(y.size(), iter, arma::fill::value(-1));
   arma::vec sm_status(iter, arma::fill::value(7));
   arma::vec split_or_merge(iter, arma::fill::value(12));
-  arma::vec log_A_vec(iter, arma::fill::value(1000));
   
   // Perform an algorithm
   for(int i = 0; i < iter; ++i){
@@ -663,19 +656,13 @@ Rcpp::List our_model(int iter, int K, arma::vec init_assign, arma::vec xi,
     // Split-Merge Step
     sm_List = our_SM(K, alloc_assign, alloc_alpha, xi, y, mu0, a_sigma, b_sigma, 
                      lambda, a_theta, b_theta, sm_iter);
+    
     arma::vec sm_assign = sm_List["new_assign"];
     arma::vec sm_alpha = sm_List["new_alpha"];
-    arma::vec sm_assign_launch = sm_List["launch_assign"];
-    iter_launch.col(i) = sm_assign_launch;
-    arma::vec sm_assign_proposed = sm_List["proposed_assign"];
-    iter_proposed.col(i) = sm_assign_proposed;
-
-    log_A_vec.row(i).fill(sm_List["log_A"]);
     
     iter_assign.col(i) = sm_assign;
     split_or_merge.row(i).fill(sm_List["split_ind"]);
     sm_status.row(i).fill(sm_List["accept_new"]);
-    
     
     init_assign = sm_assign;
     init_alpha = sm_alpha;
@@ -687,13 +674,9 @@ Rcpp::List our_model(int iter, int K, arma::vec init_assign, arma::vec xi,
     
   }
   
-  result["all_alpha"] = all_alpha;
   result["iter_assign"] = iter_assign.t();
-  result["iter_launch"] = iter_launch.t();
-  result["iter_proposed"] = iter_proposed.t();
   result["sm_status"] = sm_status;
   result["split_or_merge"] = split_or_merge;
-  result["log_A_vec"] = log_A_vec;
 
   return result;
 }
