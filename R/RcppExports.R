@@ -37,8 +37,8 @@ log_cluster_param <- function(clus_assign, alpha) {
     .Call(`_ClusterNormal_log_cluster_param`, clus_assign, alpha)
 }
 
-log_gamma_cluster <- function(alpha, xi) {
-    .Call(`_ClusterNormal_log_gamma_cluster`, alpha, xi)
+log_gamma_cluster <- function(alpha, xi, clus_assign) {
+    .Call(`_ClusterNormal_log_gamma_cluster`, alpha, xi, clus_assign)
 }
 
 our_allocate <- function(old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {

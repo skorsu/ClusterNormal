@@ -143,14 +143,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // log_gamma_cluster
-double log_gamma_cluster(arma::vec alpha, arma::vec xi);
-RcppExport SEXP _ClusterNormal_log_gamma_cluster(SEXP alphaSEXP, SEXP xiSEXP) {
+double log_gamma_cluster(arma::vec alpha, arma::vec xi, arma::vec clus_assign);
+RcppExport SEXP _ClusterNormal_log_gamma_cluster(SEXP alphaSEXP, SEXP xiSEXP, SEXP clus_assignSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
-    rcpp_result_gen = Rcpp::wrap(log_gamma_cluster(alpha, xi));
+    Rcpp::traits::input_parameter< arma::vec >::type clus_assign(clus_assignSEXP);
+    rcpp_result_gen = Rcpp::wrap(log_gamma_cluster(alpha, xi, clus_assign));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -271,7 +272,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_samp_new", (DL_FUNC) &_ClusterNormal_samp_new, 1},
     {"_ClusterNormal_log_marginal_y", (DL_FUNC) &_ClusterNormal_log_marginal_y, 6},
     {"_ClusterNormal_log_cluster_param", (DL_FUNC) &_ClusterNormal_log_cluster_param, 2},
-    {"_ClusterNormal_log_gamma_cluster", (DL_FUNC) &_ClusterNormal_log_gamma_cluster, 2},
+    {"_ClusterNormal_log_gamma_cluster", (DL_FUNC) &_ClusterNormal_log_gamma_cluster, 3},
     {"_ClusterNormal_our_allocate", (DL_FUNC) &_ClusterNormal_our_allocate, 8},
     {"_ClusterNormal_our_SM", (DL_FUNC) &_ClusterNormal_our_SM, 12},
     {"_ClusterNormal_our_model", (DL_FUNC) &_ClusterNormal_our_model, 13},
