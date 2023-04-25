@@ -1,8 +1,139 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-        "file_last_write": 1681483005.0,
-        "definitions": [],
+        "file_last_write": 1682383930.0,
+        "definitions": [
+            {
+                "usr": "c:@F@log_sum_exp#$@N@arma@S@Col>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_sum_exp(arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 12,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@adjust_alpha#I#$@N@arma@S@Col>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "adjust_alpha(int, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 37,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@fmm_log_alloc_prob#I#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "fmm_log_alloc_prob(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 55,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@fmm_samp_new#I#$@N@arma@S@Col>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "fmm_samp_new(int, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 122,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@fmm_mod#I#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "fmm_mod(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 145,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_alloc_prob#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_alloc_prob(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 178,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@samp_new#$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "samp_new(arma::mat)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 238,
+                "column": 5,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_marginal_y#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_marginal_y(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 262,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_cluster_param#$@N@arma@S@Col>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_cluster_param(arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 300,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_gamma_cluster#$@N@arma@S@Col>#d#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_gamma_cluster(arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 326,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@SFDM_allocate#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "SFDM_allocate(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 498,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@SFDM_SM#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "SFDM_SM(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 541,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@SFDM_model#I#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#d#d#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "SFDM_model(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int, int)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 679,
+                "column": 12,
+                "hidden": false
+            }
+        ],
         "hidden": false
     },
     {
