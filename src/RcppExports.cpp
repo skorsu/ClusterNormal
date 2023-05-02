@@ -73,8 +73,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // log_alloc_prob
-arma::mat log_alloc_prob(int i, arma::vec active_clus, arma::vec old_assign, arma::vec xi, arma::vec y, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, arma::vec mu0);
-RcppExport SEXP _ClusterNormal_log_alloc_prob(SEXP iSEXP, SEXP active_clusSEXP, SEXP old_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP mu0SEXP) {
+arma::mat log_alloc_prob(int i, arma::vec active_clus, arma::vec old_assign, arma::vec xi, arma::vec y, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, arma::vec mu0, bool restricted);
+RcppExport SEXP _ClusterNormal_log_alloc_prob(SEXP iSEXP, SEXP active_clusSEXP, SEXP old_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP mu0SEXP, SEXP restrictedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -87,7 +87,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type b_sigma(b_sigmaSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type mu0(mu0SEXP);
-    rcpp_result_gen = Rcpp::wrap(log_alloc_prob(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0));
+    Rcpp::traits::input_parameter< bool >::type restricted(restrictedSEXP);
+    rcpp_result_gen = Rcpp::wrap(log_alloc_prob(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, restricted));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -102,19 +103,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// log_marginal_y
-double log_marginal_y(arma::vec clus_assign, arma::vec y, arma::vec mu0, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda);
-RcppExport SEXP _ClusterNormal_log_marginal_y(SEXP clus_assignSEXP, SEXP ySEXP, SEXP mu0SEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP) {
+// log_likelihood
+double log_likelihood(arma::vec clus_assign, arma::vec y, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, arma::vec mu0);
+RcppExport SEXP _ClusterNormal_log_likelihood(SEXP clus_assignSEXP, SEXP ySEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP mu0SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type clus_assign(clus_assignSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type mu0(mu0SEXP);
     Rcpp::traits::input_parameter< arma::vec >::type a_sigma(a_sigmaSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type b_sigma(b_sigmaSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type lambda(lambdaSEXP);
-    rcpp_result_gen = Rcpp::wrap(log_marginal_y(clus_assign, y, mu0, a_sigma, b_sigma, lambda));
+    Rcpp::traits::input_parameter< arma::vec >::type mu0(mu0SEXP);
+    rcpp_result_gen = Rcpp::wrap(log_likelihood(clus_assign, y, a_sigma, b_sigma, lambda, mu0));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -140,6 +141,38 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type clus_assign(clus_assignSEXP);
     rcpp_result_gen = Rcpp::wrap(log_gamma_cluster(alpha, xi, clus_assign));
+    return rcpp_result_gen;
+END_RCPP
+}
+// log_proposal
+double log_proposal(arma::vec c1, arma::vec c2, arma::uvec S, arma::vec s_clus, arma::vec y, arma::vec xi, arma::vec mu0, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda);
+RcppExport SEXP _ClusterNormal_log_proposal(SEXP c1SEXP, SEXP c2SEXP, SEXP SSEXP, SEXP s_clusSEXP, SEXP ySEXP, SEXP xiSEXP, SEXP mu0SEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type c1(c1SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type c2(c2SEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type S(SSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type s_clus(s_clusSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu0(mu0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type a_sigma(a_sigmaSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type b_sigma(b_sigmaSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(log_proposal(c1, c2, S, s_clus, y, xi, mu0, a_sigma, b_sigma, lambda));
+    return rcpp_result_gen;
+END_RCPP
+}
+// log_prior
+double log_prior(arma::vec clus_assign, arma::vec xi);
+RcppExport SEXP _ClusterNormal_log_prior(SEXP clus_assignSEXP, SEXP xiSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type clus_assign(clus_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
+    rcpp_result_gen = Rcpp::wrap(log_prior(clus_assign, xi));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -256,11 +289,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_fmm_log_alloc_prob", (DL_FUNC) &_ClusterNormal_fmm_log_alloc_prob, 9},
     {"_ClusterNormal_fmm_samp_new", (DL_FUNC) &_ClusterNormal_fmm_samp_new, 2},
     {"_ClusterNormal_fmm_mod", (DL_FUNC) &_ClusterNormal_fmm_mod, 9},
-    {"_ClusterNormal_log_alloc_prob", (DL_FUNC) &_ClusterNormal_log_alloc_prob, 9},
+    {"_ClusterNormal_log_alloc_prob", (DL_FUNC) &_ClusterNormal_log_alloc_prob, 10},
     {"_ClusterNormal_samp_new", (DL_FUNC) &_ClusterNormal_samp_new, 1},
-    {"_ClusterNormal_log_marginal_y", (DL_FUNC) &_ClusterNormal_log_marginal_y, 6},
+    {"_ClusterNormal_log_likelihood", (DL_FUNC) &_ClusterNormal_log_likelihood, 6},
     {"_ClusterNormal_log_cluster_param", (DL_FUNC) &_ClusterNormal_log_cluster_param, 2},
     {"_ClusterNormal_log_gamma_cluster", (DL_FUNC) &_ClusterNormal_log_gamma_cluster, 3},
+    {"_ClusterNormal_log_proposal", (DL_FUNC) &_ClusterNormal_log_proposal, 10},
+    {"_ClusterNormal_log_prior", (DL_FUNC) &_ClusterNormal_log_prior, 2},
     {"_ClusterNormal_SFDM_allocate", (DL_FUNC) &_ClusterNormal_SFDM_allocate, 9},
     {"_ClusterNormal_SFDM_SM", (DL_FUNC) &_ClusterNormal_SFDM_SM, 12},
     {"_ClusterNormal_SFDM_model", (DL_FUNC) &_ClusterNormal_SFDM_model, 13},

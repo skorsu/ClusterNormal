@@ -177,7 +177,8 @@ arma::mat fmm_mod(int t, int K, arma::vec old_assign, arma::vec xi, arma::vec y,
 // [[Rcpp::export]]
 arma::mat log_alloc_prob(int i, arma::vec active_clus, arma::vec old_assign, 
                          arma::vec xi, arma::vec y, arma::vec a_sigma, 
-                         arma::vec b_sigma, arma::vec lambda, arma::vec mu0){
+                         arma::vec b_sigma, arma::vec lambda, arma::vec mu0,
+                         bool restricted){
   
   /* Description: This function is an adjusted `fmm_log_alloc_prob` function. 
    *              Instead of calculating the log allocation probability for all 
@@ -187,7 +188,9 @@ arma::mat log_alloc_prob(int i, arma::vec active_clus, arma::vec old_assign,
    * Input: Index of the current observation (i), 
    *        list of the active cluster (active_clus),
    *        current cluster assignment (old_assign), cluster concentration (xi),
-   *        data (y), data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+   *        data (y), data hyperparameters (a_sigma, b_sigma, lambda, mu0),
+   *        perform a restricted Gibbs or not (appeared in SM paper as an 
+   *        equation 3.14)
    */
   
   // Get the list of the active clusters
@@ -225,8 +228,13 @@ arma::mat log_alloc_prob(int i, arma::vec active_clus, arma::vec old_assign,
     double log_p = R::dt((y[i] - mu_n)/sd_t, (2 * a_n), 1);
     log_p -= std::log(sd_t);
     
-    // The allocation probability needs to include log(n_k + xi_k).
-    log_p += std::log(n_k + xi[(c-1)]);
+    if(restricted == true){
+      // For the restricted, we will use n instead.
+      log_p += std::log(n_k);
+    } else {
+      // The allocation probability needs to include log(n_k + xi_k).
+      log_p += std::log(n_k + xi[(c-1)]);
+    }
     
     log_alloc.row(k).col(1).fill(log_p);
   }
@@ -259,40 +267,57 @@ int samp_new(arma::mat log_prob_mat){
 }
 
 // [[Rcpp::export]]
-double log_marginal_y(arma::vec clus_assign, arma::vec y, arma::vec mu0, 
-                      arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda){
+double log_likelihood(arma::vec clus_assign, arma::vec y, arma::vec a_sigma, 
+                      arma::vec b_sigma, arma::vec lambda, arma::vec mu0){
   
-  /* Description: This will calculate the log marginal probability of the data.
-   * Output: log marginal probability of the data.
-   * Input: list of the active cluster (clus_assign), data (y),
-   *        data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+  /* Description: This is the function for calculating the likelihood. This is 
+   *              based on the split-merge paper (Equation 3.7) 
+   * Output: log likelihood
+   * Input: vector of the cluster assignment (clus_assign), data (y), 
+   *        data hyperparameters (a_sigma, b_sigma, lambda, mu0).
    */
   
   double result = 0.0;
   
-  // Hyperparameter for each observation
-  arma::uvec ci = arma::conv_to<arma::uvec>::from(clus_assign);
-  arma::vec a_s = a_sigma.rows(ci - 1);
-  arma::vec b_s = b_sigma.rows(ci - 1);
-  arma::vec l_s = lambda.rows(ci - 1);
-  arma::vec mu0_s = mu0.rows(ci - 1);
+  // Select only the active cluster
+  arma::uvec active_clus = arma::conv_to<arma::uvec>::from(arma::unique(clus_assign));
+  int K_p = active_clus.size();
+  arma::vec an_pos(K_p, arma::fill::value(-1000));
+  arma::vec mu_pos(K_p, arma::fill::value(-1000));
+  arma::vec scale_pos(K_p, arma::fill::value(-1000));
   
-  // Intermediate calculation for b_n
-  arma::vec bn_s(b_s);
-  bn_s += ((l_s % arma::pow(2 * (l_s + 1), -1)) % arma::pow(mu0_s - y, 2));
+  // Calculate the posterior parameters
+  for(int k = 0; k < K_p; ++k){
+    int c = active_clus[k]; // select the current cluster
+    arma::vec y_c = y.rows(arma::find(clus_assign == c)); // data point in the current c
+    int n_k = y_c.size(); // number of element in cluster c
+    
+    double a_n = a_sigma[(c-1)] + (n_k/2);
+    double V_n = 1/(n_k + lambda[(c-1)]);
+    double sum_y = 0.0;
+    double b_n = b_sigma[(c-1)]; // if n_k = 0 then b_n = b_k;
+    if(n_k != 0){
+      sum_y += arma::accu(y_c);
+      b_n += (0.5 * (n_k - 1) * arma::var(y_c)); // if n_k = 1, drop the second terms of b_k
+      b_n += (0.5 * (n_k * lambda[(c-1)]) / (n_k + lambda[(c-1)])) * std::pow((sum_y/n_k) - mu0[(c-1)], 2.0);
+    }
+    
+    // The posterior predictive is scaled-t distribution.
+    double mu_n = (sum_y + ((lambda % mu0)[(c-1)]))/(n_k + lambda[(c-1)]);
+    double sd_t = std::pow(b_n * (1 + V_n) / a_n, 0.5);
+    
+    an_pos.row(k).fill(a_n);
+    mu_pos.row(k).fill(mu_n);
+    scale_pos.row(k).fill(sd_t);
+  }
   
-  // Calculate the log marginal probability for each observation
-  arma::vec log_m(clus_assign.size(), arma::fill::value(-0.5 * std::log(2 * pi)));
-  log_m += arma::lgamma(a_s + 0.5);
-  log_m -= arma::lgamma(a_s);
-  log_m += (a_s % arma::log(b_s));
-  log_m -= ((a_s + 0.5) % arma::log(bn_s));
-  log_m += (0.5 * arma::log(l_s));
-  log_m -= (0.5 * arma::log(l_s + 1));
-  
-  // Calculate the log marginal probability for overall
-  result += arma::accu(log_m);
-  
+  // Calculate the log-likelihood
+  for(int i = 0; i < y.size(); ++i){
+    arma::uvec ci = arma::find(clus_assign[i] == active_clus);
+    result += R::dt((y[i] - mu_pos[ci[0]])/scale_pos[ci[0]], (2 * an_pos[ci[0]]), 1);
+    result -= std::log(scale_pos[ci[0]]);
+  }
+
   return result;
 }
 
@@ -342,98 +367,70 @@ double log_gamma_cluster(arma::vec alpha, arma::vec xi, arma::vec clus_assign){
   return result;
 }
 
-// arma::mat rGibb_prob(int i, arma::vec active_clus, arma::vec old_assign, 
-//                      arma::vec xi, arma::vec y, arma::vec a_sigma, 
-//                      arma::vec b_sigma, arma::vec lambda, arma::vec mu0){
-//   
-//   /* Description: NA
-//    * Output: NA
-//    * Input: Index of the current observation (i), 
-//    *        list of the active cluster (active_clus),
-//    *        current cluster assignment (old_assign), cluster concentration (xi),
-//    *        data (y), data hyperparameters (a_sigma, b_sigma, lambda, mu0)
-//    */
-//   
-//   // Get the list of the active clusters
-//   int K = active_clus.size();
-//   arma::mat log_alloc(K, 2, arma::fill::value(-1000));
-//   
-//   // Create the data vector which exclude the observation i.
-//   arma::vec y_not_i(y);
-//   y_not_i.shed_row(i);
-//   arma::vec c_not_i(old_assign);
-//   c_not_i.shed_row(i);
-//   
-//   // Calculate the log allocation probability for each cluster
-//   for(int k = 0; k < K; ++k){
-//     int c = active_clus[k]; // select the current cluster
-//     log_alloc.row(k).col(0).fill(c);
-//     arma::vec y_c(y_not_i);
-//     y_c.shed_rows(arma::find(c_not_i != c)); // data point in the current c
-//     int n_k = y_c.size(); // number of element in cluster c
-//     
-//     // Calculate the posterior parameters
-//     double a_n = a_sigma[(c-1)] + (n_k/2);
-//     double V_n = 1/(n_k + lambda[(c-1)]);
-//     double sum_y = 0.0;
-//     double b_n = b_sigma[(c-1)]; // if n_k = 0 then b_n = b_k;
-//     if(n_k != 0){
-//       sum_y += arma::accu(y_c);
-//       b_n += (0.5 * (n_k - 1) * arma::var(y_c)); // if n_k = 1, drop the second terms of b_k
-//       b_n += (0.5 * (n_k * lambda[(c-1)]) / (n_k + lambda[(c-1)])) * std::pow((sum_y/n_k) - mu0[(c-1)], 2.0);
-//     }
-//     double mu_n = (sum_y + ((lambda % mu0)[(c-1)]))/(n_k + lambda[(c-1)]);
-//     
-//     // The posterior predictive is scaled-t distribution.
-//     double sd_t = std::pow(b_n * (1 + V_n) / a_n, 0.5);
-//     double log_p = R::dt((y[i] - mu_n)/sd_t, (2 * a_n), 1);
-//     log_p -= std::log(sd_t);
-//     
-//     // The allocation probability needs to include log(n_k + xi_k).
-//     log_p += std::log(n_k + xi[(c-1)]);
-//     
-//     log_alloc.row(k).col(1).fill(log_p + std::log(n_k));
-//   }
-//   
-//   return log_alloc;
-// }
-// 
-// double log_proposal(arma::vec c1, arma::vec c2, arma::uvec S, arma::vec s_clus, 
-//                     arma::vec y, arma::vec xi, arma::vec mu0, arma::vec a_sigma, 
-//                     arma::vec b_sigma, arma::vec lambda){
-//   
-//   /* Description: This will calculate the proposal probability in the log scale.
-//    *              Based on the SM paper, we will consider only the observations 
-//    *              which are in S.
-//    * Output: log proposal probability, log(q(c1|c2)).
-//    * Input: Two lists of the cluster assignment (c1, c2), the set of the 
-//    *        observation that we are interested in SM procedure (S), the list of 
-//    *        interested cluster (s_clus), data (y), cluster concentration (xi), 
-//    *        data hyperparameters (a_sigma, b_sigma, lambda, mu0)
-//    */
-//   
-//   double result = 0.0;
-//   
-//   arma::vec init_assign(c2);
-//   arma::vec c2_unique = arma::unique(init_assign);
-//   
-//   for(int i = 0; i < S.size(); ++i){
-//     int c = S[i];
-//     arma::mat obs_i_alloc = rGibb_prob(c, s_clus, init_assign, xi, y, 
-//                                        a_sigma, b_sigma, lambda, mu0);
-//     arma::vec prob = log_sum_exp(obs_i_alloc.col(1));
-//     arma::mat info = arma::join_rows(obs_i_alloc, prob);
-//     arma::vec clus = info.col(0);
-//     arma::uvec index = arma::find(clus == c1[c]);
-//     arma::vec prob_c = info.submat(index, arma::uvec(1, arma::fill::value(2)));
-//     result += std::log(prob_c[0]);
-//     
-//     init_assign.row(c).fill(c1[c]);
-//   }
-//   
-//   return result;
-// }
+// [[Rcpp::export]]
+double log_proposal(arma::vec c1, arma::vec c2, arma::uvec S, arma::vec s_clus,
+                    arma::vec y, arma::vec xi, arma::vec mu0, arma::vec a_sigma,
+                    arma::vec b_sigma, arma::vec lambda){
 
+  /* Description: This will calculate the proposal probability in the log scale.
+   *              Based on the SM paper, we will consider only the observations
+   *              which are in S.
+   * Output: log proposal probability, log(q(c1|c2)).
+   * Input: Two lists of the cluster assignment (c1, c2), the set of the
+   *        observation that we are interested in SM procedure (S), the list of
+   *        interested cluster (s_clus), data (y), cluster concentration (xi),
+   *        data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+   */
+
+  double result = 0.0;
+
+  arma::vec init_assign(c2);
+  arma::vec c2_unique = arma::unique(init_assign);
+
+  for(int i = 0; i < S.size(); ++i){
+    int c = S[i];
+    arma::mat obs_i_alloc = log_alloc_prob(c, s_clus, init_assign, xi, y,
+                                           a_sigma, b_sigma, lambda, mu0, true);
+    arma::vec prob = log_sum_exp(obs_i_alloc.col(1));
+    arma::mat info = arma::join_rows(obs_i_alloc, prob);
+    arma::vec clus = info.col(0);
+    arma::uvec index = arma::find(clus == c1[c]);
+    arma::vec prob_c = info.submat(index, arma::uvec(1, arma::fill::value(2)));
+    result += std::log(prob_c[0]);
+
+    init_assign.row(c).fill(c1[c]);
+  }
+
+  return result;
+}
+
+// [[Rcpp::export]]
+double log_prior(arma::vec clus_assign, arma::vec xi){
+  
+  /* Description: This is a function for calculating a log of the prior 
+   *              distribution for the cluster assignment based on the 
+   *              Split-Merge paper.
+   * Output: log of prior.
+   * Input: Cluster assignment (clus_assign), cluster concentration (xi)
+   */
+  
+  double result = 0.0;
+  
+  arma::vec clus_vec_current(clus_assign.size(), arma::fill::value(-1));
+  for(int i = 0; i < clus_assign.size(); ++i){
+    int cc = clus_assign[i];
+    clus_vec_current.row(i).fill(cc);
+    
+    arma::uvec nk = arma::find(clus_vec_current == cc);
+    result += std::log(nk.size() + xi[(cc - 1)]);
+  }
+  
+  arma::uvec active_clus = arma::conv_to<arma::uvec>::from(arma::unique(clus_assign));
+  arma::vec ni = arma::regspace(1, clus_assign.size());
+  result -= arma::accu(arma::log((ni - 1) + arma::accu(xi.rows(arma::find(active_clus - 1)))));
+
+  return result;
+}
 
 // Step 1: Update the cluster space: -------------------------------------------
 // * Note: Omitted this step for now
@@ -518,7 +515,7 @@ Rcpp::List SFDM_allocate(int K, arma::vec old_assign, arma::vec xi, arma::vec y,
   // Reassign the observation
   for(int i = 0; i < new_assign.size(); ++i){
     arma::mat obs_i_alloc = log_alloc_prob(i, old_unique, new_assign, xi, y, 
-                                           a_sigma, b_sigma, lambda, mu0);
+                                           a_sigma, b_sigma, lambda, mu0, false);
     new_assign.row(i).fill(samp_new(obs_i_alloc));
   }
 
@@ -601,7 +598,7 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
   for(int t = 0; t < launch_iter; ++t){
     for(int j = 0; j < S.size(); ++j){
       arma::mat obs_i_alloc = log_alloc_prob(S[j], samp_clus, launch_assign, xi, 
-                                             y, a_sigma, b_sigma, lambda, mu0);
+                                             y, a_sigma, b_sigma, lambda, mu0, true);
       launch_assign.row(S[j]).fill(samp_new(obs_i_alloc));
     }
   }
@@ -613,32 +610,37 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
     for(int j = 0; j < S.size(); ++j){
       arma::mat obs_i_alloc = log_alloc_prob(S[j], samp_clus, proposed_assign, 
                                              xi, y, a_sigma, b_sigma, lambda, 
-                                             mu0);
+                                             mu0, true);
       proposed_assign.row(S[j]).fill(samp_new(obs_i_alloc));
     }
     log_A += (std::log(a_theta) - std::log(b_theta)); // Spike-and-slab
-    log_A -= (S.size() * std::log(0.5)); // Proposal Probability
-    // log_A -= log_proposal(proposed_assign, launch_assign, S, samp_clus, y, xi, 
-    //                       mu0, a_sigma, b_sigma, lambda); // Proposal Probability
+    // Proposal Probability
+    log_A += log_proposal(launch_assign, proposed_assign, S, samp_clus, y, xi,                       
+                          mu0, a_sigma, b_sigma, lambda); 
+    log_A -= log_proposal(proposed_assign, launch_assign, S, samp_clus, y, xi,                       
+                          mu0, a_sigma, b_sigma, lambda); 
   } else {
     // Merge: All observations in S and {ci, cj} will be allocated to cj
     proposed_assign.rows(S).fill(samp_clus[1]);
     proposed_assign.rows(samp_obs).fill(samp_clus[1]);
     log_A += (std::log(b_theta) - std::log(a_theta)); // Spike-and-slab
-    log_A += (S.size() * std::log(0.5)); // Proposal Probability
-    // log_A += log_proposal(old_assign, launch_assign, S, samp_clus, y, xi, 
-    //                       mu0, a_sigma, b_sigma, lambda); // Proposal Probability
+    // Proposal Probability
+    log_A += log_proposal(old_assign, launch_assign, S, samp_clus, y, xi, 
+                          mu0, a_sigma, b_sigma, lambda); 
   }
   
   // (5) Evaluate the proposal by using MH
-  log_A += log_marginal_y(proposed_assign, y, mu0, a_sigma, b_sigma, lambda);
-  log_A -= log_marginal_y(old_assign, y, mu0, a_sigma, b_sigma, lambda);
-  
-  log_A += log_cluster_param(proposed_assign, all_alpha);
-  log_A -= log_cluster_param(old_assign, all_alpha);
+  log_A += log_likelihood(proposed_assign, y, a_sigma, b_sigma, lambda, mu0);
+  log_A -= log_likelihood(old_assign, y, a_sigma, b_sigma, lambda, mu0);
+
+  // std::cout << "log_lik_old: " << log_likelihood(old_assign, y, a_sigma, b_sigma, lambda, mu0) << std::endl;
+  // std::cout << "log_lik_pro: " << log_likelihood(proposed_assign, y, a_sigma, b_sigma, lambda, mu0) << std::endl;
   
   log_A += log_gamma_cluster(all_alpha, xi, proposed_assign);
   log_A -= log_gamma_cluster(all_alpha, xi, old_assign);
+  
+  log_A += log_prior(proposed_assign, xi);
+  log_A -= log_prior(proposed_assign, xi);
   
   arma::vec new_assign(old_assign);
   arma::vec new_alpha(all_alpha);

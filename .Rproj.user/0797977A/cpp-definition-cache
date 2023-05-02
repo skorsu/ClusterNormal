@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-        "file_last_write": 1682383930.0,
+        "file_last_write": 1682486640.0,
         "definitions": [
             {
                 "usr": "c:@F@log_sum_exp#$@N@arma@S@Col>#d#",
@@ -104,12 +104,22 @@
                 "hidden": false
             },
             {
+                "usr": "c:@F@log_proposal#$@N@arma@S@Col>#d#S0_#$@N@arma@S@Col>#i#S0_#S0_#S0_#S0_#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_proposal(arma::vec, arma::vec, arma::uvec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
+                "line": 346,
+                "column": 8,
+                "hidden": false
+            },
+            {
                 "usr": "c:@F@SFDM_allocate#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#S0_#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "SFDM_allocate(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 498,
+                "line": 443,
                 "column": 12,
                 "hidden": false
             },
@@ -119,7 +129,7 @@
                 "parent_name": "",
                 "name": "SFDM_SM(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 541,
+                "line": 486,
                 "column": 12,
                 "hidden": false
             },
@@ -129,7 +139,7 @@
                 "parent_name": "",
                 "name": "SFDM_model(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int, int)",
                 "file": "/Users/kevinkvp/Desktop/Research/ClusterNormal/src/main.cpp",
-                "line": 679,
+                "line": 626,
                 "column": 12,
                 "hidden": false
             }

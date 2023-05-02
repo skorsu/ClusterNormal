@@ -17,16 +17,16 @@ fmm_mod <- function(t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
     .Call(`_ClusterNormal_fmm_mod`, t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
 }
 
-log_alloc_prob <- function(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_log_alloc_prob`, i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
+log_alloc_prob <- function(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, restricted) {
+    .Call(`_ClusterNormal_log_alloc_prob`, i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, restricted)
 }
 
 samp_new <- function(log_prob_mat) {
     .Call(`_ClusterNormal_samp_new`, log_prob_mat)
 }
 
-log_marginal_y <- function(clus_assign, y, mu0, a_sigma, b_sigma, lambda) {
-    .Call(`_ClusterNormal_log_marginal_y`, clus_assign, y, mu0, a_sigma, b_sigma, lambda)
+log_likelihood <- function(clus_assign, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_log_likelihood`, clus_assign, y, a_sigma, b_sigma, lambda, mu0)
 }
 
 log_cluster_param <- function(clus_assign, alpha) {
@@ -35,6 +35,14 @@ log_cluster_param <- function(clus_assign, alpha) {
 
 log_gamma_cluster <- function(alpha, xi, clus_assign) {
     .Call(`_ClusterNormal_log_gamma_cluster`, alpha, xi, clus_assign)
+}
+
+log_proposal <- function(c1, c2, S, s_clus, y, xi, mu0, a_sigma, b_sigma, lambda) {
+    .Call(`_ClusterNormal_log_proposal`, c1, c2, S, s_clus, y, xi, mu0, a_sigma, b_sigma, lambda)
+}
+
+log_prior <- function(clus_assign, xi) {
+    .Call(`_ClusterNormal_log_prior`, clus_assign, xi)
 }
 
 SFDM_allocate <- function(K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {
