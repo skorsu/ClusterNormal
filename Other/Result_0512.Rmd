@@ -1,0 +1,375 @@
+---
+title: "Result - 5/12"
+author: "Kevin Korsurat"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Rcpp)
+library(RcppArmadillo)
+library(salso)
+library(ClusterNormal)
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(doParallel)
+library(mclustcomp)
+library(factoextra)
+library(PReMiuM) ## Dirichlet Process
+library(AntMAN) ## Mixture of Finite Mixture
+```
+
+# (0) The simulated data
+
+For the entire analysis in this report, there are 4 settings. The first two setting is the same as those I previously used last time (Result - 3/8). The setting #3 and #4 are the new settings. Below are the histogram showing the simulated data in each setting.
+
+```{r, echo=FALSE}
+set.seed(2)
+ci_actual <- sample(1:2, 500, replace = TRUE)
+data_sim <- rnorm(500, c(-5, 5)[ci_actual], 1)
+
+p1 <- data.frame(ci_actual, data_sim) %>%
+  ggplot(aes(x = data_sim, fill = factor(ci_actual))) +
+    geom_histogram(alpha=0.6, position = 'identity', bins = 50) +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    theme_bw() +
+    labs(fill="", x = "Data", y = "", title = "Setting #1")
+
+set.seed(2)
+ci_actual <- sample(1:5, 500, replace = TRUE)
+data_sim <- rnorm(500, c(-100, -50, 0, 50, 100)[ci_actual], 1)
+
+p2 <- data.frame(ci_actual, data_sim) %>%
+  ggplot(aes(x = data_sim, fill = factor(ci_actual))) +
+    geom_histogram(alpha=0.6, position = 'identity', bins = 50) +
+    scale_fill_manual(values=c("#69b3a2", "#404080", "#F99985", "#000000", "#FF4CB0")) +
+    theme_bw() +
+    labs(fill="", x = "Data", y = "", title = "Setting #2")
+
+set.seed(2)
+ci_actual <- sample(1:2, 500, replace = TRUE)
+data_sim <- rnorm(500, c(-5, 5)[ci_actual], 4)
+
+p3 <- data.frame(ci_actual, data_sim) %>%
+  ggplot(aes(x = data_sim, fill = factor(ci_actual))) +
+    geom_histogram(alpha=0.6, position = 'identity', bins = 50) +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    theme_bw() +
+    labs(fill="", x = "Data", y = "", title = "Setting #3")
+
+set.seed(2)
+ci_actual <- sample(1:5, 500, replace = TRUE)
+data_sim <- rnorm(500, c(-10, -5, 0, 20, 40)[ci_actual], c(1.5, 1.5, 1.5, 3, 3)[ci_actual])
+
+p4 <- data.frame(ci_actual, data_sim) %>%
+  ggplot(aes(x = data_sim, fill = factor(ci_actual))) +
+    geom_histogram(alpha=0.6, position = 'identity', bins = 50) +
+    scale_fill_manual(values=c("#69b3a2", "#404080", "#F99985", "#000000", "#FF4CB0")) +
+    theme_bw() +
+    labs(fill="", x = "Data", y = "", title = "Setting #4")
+
+grid.arrange(p1, p2, p3, p4)
+```
+
+```{r, echo=FALSE}
+## Data Simulation
+rm(list = ls())
+seed_val <- 2
+
+### Setting 1
+set.seed(seed_val)
+ci_actual_1 <- sample(1:2, 500, replace = TRUE)
+data_sim_1 <- rnorm(500, c(-5, 5)[ci_actual_1], 1)
+
+### Setting 2
+set.seed(seed_val)
+ci_actual_2 <- sample(1:5, 500, replace = TRUE)
+data_sim_2 <- rnorm(500, c(-100, -50, -20, 50, 100)[ci_actual_2], 1)
+
+### Setting 3
+set.seed(seed_val)
+ci_actual_3 <- sample(1:2, 500, replace = TRUE)
+data_sim_3 <- rnorm(500, c(-5, 5)[ci_actual_3], 4)
+
+### Setting 4
+set.seed(seed_val)
+ci_actual_4 <- sample(1:5, 500, replace = TRUE)
+data_sim_4 <- rnorm(500, c(-10, -5, 0, 20, 40)[ci_actual_4], 
+                    c(1.5, 1.5, 1.5, 3, 3)[ci_actual_4])
+```
+
+```{r}
+n_unique <- function(vec){
+  length(unique(vec))
+}
+```
+
+## Setting 1
+
+```{r}
+### Setting 1
+K <- 10
+iter <- 1000
+
+ci_init <- sample(1:1, 500, replace = TRUE)
+xi_vec <- rep(0.01, K)
+mu0_vec <- rep(0, K)
+a_sigma_vec <- rep(1, K)
+b_sigma_vec <- rep(1, K)
+lambda_vec <- rep(1, K)
+a_theta <- 1
+b_theta <- 1
+sm_iter <- 25
+
+set.seed(seed_val)
+start_time <- Sys.time()
+result1 <- SFDM_model(iter, K, ci_init, xi_vec, scale(data_sim_1), mu0_vec, 
+                      a_sigma_vec, b_sigma_vec, lambda_vec, a_theta, b_theta, 
+                      sm_iter, 250)
+Sys.time() - start_time
+table(ci_actual_1, salso(result1$iter_assign[-(1:500), ], maxNClusters = K))
+
+plot(1:iter, apply(result1$iter_assign, 1, n_unique), type = "l", 
+     ylim = c(1, K), xlab = "Iteration", ylab = "Active Cluster")
+```
+
+```{r}
+mean(apply(result1$iter_assign, 1, n_unique))
+```
+
+
+```{r}
+result_status <- factor(result1$sm_status)
+levels(result_status) <- c("Reject", "Accept")
+result_sm <- factor(result1$split_or_merge)
+levels(result_sm) <- c("Merge", "Split")
+table(result_status, result_sm)
+```
+
+```{r}
+rbind(data.frame(data_sim_1, ci_actual_1, 
+                 ci_result = as.numeric(salso(result1$iter_assign[-(1:500), ], maxNClusters = K))) %>%
+        group_by(ci_actual_1) %>%
+        summarise(q = quantile(data_sim_1)) %>%
+        rename(cluster = ci_actual_1) %>%
+        mutate(type = "Actual", status = paste0("Q", c(0, 1, 2, 3, 4))) %>% 
+        pivot_wider(names_from = status, values_from = q),
+      data.frame(data_sim_1, ci_actual_1, 
+                 ci_result = as.numeric(salso(result1$iter_assign[-(1:500), ], maxNClusters = K))) %>%
+        group_by(ci_result) %>%
+        summarise(q = quantile(data_sim_1)) %>%
+        rename(cluster = ci_result) %>%
+        mutate(type = "Model", status = paste0("Q", c(0, 1, 2, 3, 4))) %>% 
+        pivot_wider(names_from = status, values_from = q))
+```
+
+```{r}
+ci_result_1 <- as.numeric(salso(result1$iter_assign[-(1:500), ], maxNClusters = K))
+
+
+data.frame(data_sim_1, ci_actual_1, ci_result_1) %>%
+  ggplot(aes(x = data_sim_1, y = data_sim_1, col = factor(ci_actual_1))) +
+  geom_point() +
+  theme_bw() + 
+  scale_color_manual(values=c("#69b3a2", "#404080")) +
+  geom_vline(xintercept = quantile(data_sim_1[ci_result_1 == 1], c(0, 1)), 
+             linetype = "dotted", color = "#69b3a2", size = 1.5) +
+  geom_vline(xintercept = quantile(data_sim_1[ci_result_1 == 2], c(0, 1)), 
+             linetype = "dotted", color = "#404080", size = 1.5) +
+  labs(col = "Actual", x = "Data", y = "Data")
+```
+
+## Setting 2
+
+```{r}
+### Setting 2
+K <- 10
+iter <- 1000
+
+ci_init <- rep(1, 500)
+xi_vec <- rep(0.01, K)
+mu0_vec <- rep(0, K)
+a_sigma_vec <- rep(100, K)
+b_sigma_vec <- rep(1, K)
+lambda_vec <- rep(0.01, K)
+a_theta <- 1
+b_theta <- 4
+sm_iter <- 10
+
+set.seed(seed_val)
+start_time <- Sys.time()
+result2 <- SFDM_model(iter, K, ci_init, xi_vec, scale(data_sim_2), mu0_vec, 
+                     a_sigma_vec, b_sigma_vec, lambda_vec, a_theta, b_theta, 
+                     sm_iter, 250)
+Sys.time() - start_time
+table(ci_actual_2, salso(result2$iter_assign[-(1:500), ], maxNClusters = K))
+
+plot(1:iter, apply(result2$iter_assign, 1, n_unique), type = "l", 
+     ylim = c(1, K), xlab = "Iteration", ylab = "Active Cluster")
+```
+
+```{r}
+mean(apply(result2$iter_assign, 1, n_unique))
+```
+
+```{r}
+result_status <- factor(result2$sm_status)
+levels(result_status) <- c("Reject", "Accept")
+result_sm <- factor(result2$split_or_merge)
+levels(result_sm) <- c("Merge", "Split")
+table(result_status, result_sm)
+```
+
+## Setting 3
+
+```{r}
+### Setting 3
+K <- 10
+iter <- 1000
+ci_init <- rep(1:1, 500)
+xi_vec <- rep(0.01, K)
+mu0_vec <- rep(0, K)
+a_sigma_vec <- rep(100, K)
+b_sigma_vec <- rep(10, K)
+lambda_vec <- rep(10, K)
+a_theta <- 1
+b_theta <- 1
+sm_iter <- 10
+
+set.seed(seed_val)
+start_time <- Sys.time()
+result3 <- SFDM_model(iter, K, ci_init, xi_vec, scale(data_sim_3), mu0_vec, 
+                     a_sigma_vec, b_sigma_vec, lambda_vec, a_theta, b_theta, 
+                     sm_iter, 250)
+Sys.time() - start_time
+table(ci_actual_3, salso(result3$iter_assign[-(1:500), ], maxNClusters = K))
+
+plot(1:iter, apply(result3$iter_assign, 1, n_unique), type = "l", 
+     ylim = c(1, K), xlab = "Iteration", ylab = "Active Cluster")
+```
+
+```{r}
+mean(apply(result3$iter_assign, 1, n_unique))
+```
+
+```{r}
+result_status <- factor(result3$sm_status)
+levels(result_status) <- c("Reject", "Accept")
+result_sm <- factor(result3$split_or_merge)
+levels(result_sm) <- c("Merge", "Split")
+table(result_status, result_sm)
+```
+
+```{r}
+rbind(data.frame(data_sim_3, ci_actual_3, 
+                 ci_result = as.numeric(salso(result3$iter_assign[-(1:500), ], maxNClusters = K))) %>%
+        group_by(ci_actual_3) %>%
+        summarise(q = quantile(data_sim_3)) %>%
+        rename(cluster = ci_actual_3) %>%
+        mutate(type = "Actual", status = paste0("Q", c(0, 1, 2, 3, 4))) %>% 
+        pivot_wider(names_from = status, values_from = q),
+      data.frame(data_sim_3, ci_actual_3, 
+                 ci_result = as.numeric(salso(result3$iter_assign[-(1:500), ], maxNClusters = K))) %>%
+        group_by(ci_result) %>%
+        summarise(q = quantile(data_sim_3)) %>%
+        rename(cluster = ci_result) %>%
+        mutate(type = "Model", status = paste0("Q", c(0, 1, 2, 3, 4))) %>% 
+        pivot_wider(names_from = status, values_from = q))
+```
+
+```{r}
+ci_result_3 <- as.numeric(salso(result3$iter_assign[-(1:500), ], maxNClusters = K))
+
+data.frame(data_sim_3, ci_actual_3, ci_result_3) %>%
+  ggplot(aes(x = data_sim_3, y = data_sim_3, col = factor(ci_actual_3))) +
+  geom_point() +
+  theme_bw() + 
+  scale_color_manual(values=c("#69b3a2", "#404080")) +
+  geom_vline(xintercept = quantile(data_sim_3[ci_result_3 == 1], c(0, 1)), 
+             linetype = "dotted", color = "#69b3a2", size = 1.5) +
+  geom_vline(xintercept = quantile(data_sim_3[ci_result_3 == 2], c(0, 1)), 
+             linetype = "dotted", color = "#404080", size = 1.5) +
+  ## geom_vline(xintercept = quantile(data_sim_3[ci_result_3 == 3], c(0, 1)), 
+  ##            linetype = "dotted", color = "red", size = 1.5) +
+  labs(col = "Actual", x = "Data", y = "Data")
+```
+
+
+## Setting 4
+
+```{r}
+### Setting 4
+K <- 10
+iter <- 1000
+
+ci_init <- rep(1, 500)
+xi_vec <- rep(0.01, K)
+mu0_vec <- rep(0, K)
+a_sigma_vec <- rep(100, K)
+b_sigma_vec <- rep(1, K)
+lambda_vec <- rep(1, K)
+a_theta <- 1
+b_theta <- 1
+sm_iter <- 10
+
+set.seed(seed_val)
+start_time <- Sys.time()
+result4 <- SFDM_model(iter, K, ci_init, xi_vec, scale(data_sim_4), mu0_vec, 
+                    a_sigma_vec, b_sigma_vec, lambda_vec, a_theta, b_theta, 
+                    sm_iter, 250)
+Sys.time() - start_time
+
+table(ci_actual_4, salso(result4$iter_assign[-(1:500), ], maxNClusters = K))
+
+plot(1:iter, apply(result4$iter_assign, 1, n_unique), type = "l", 
+     ylim = c(1, K), xlab = "Iteration", ylab = "Active Cluster")
+```
+```{r}
+mean(apply(result4$iter_assign, 1, n_unique))
+```
+
+```{r}
+result_status <- factor(result4$sm_status)
+levels(result_status) <- c("Reject", "Accept")
+result_sm <- factor(result4$split_or_merge)
+levels(result_sm) <- c("Merge", "Split")
+table(result_status, result_sm)
+```
+
+```{r}
+rbind(data.frame(data_sim_4, ci_actual_4, 
+                 ci_result = as.numeric(salso(result4$iter_assign[-(1:500), ], maxNClusters = K))) %>%
+        group_by(ci_actual_4) %>%
+        summarise(q = quantile(data_sim_4)) %>%
+        rename(cluster = ci_actual_4) %>%
+        mutate(type = "Actual", status = paste0("Q", c(0, 1, 2, 3, 4))) %>% 
+        pivot_wider(names_from = status, values_from = q),
+      data.frame(data_sim_4, ci_actual_4, 
+                 ci_result = as.numeric(salso(result4$iter_assign[-(1:500), ], maxNClusters = K))) %>%
+        group_by(ci_result) %>%
+        summarise(q = quantile(data_sim_4)) %>%
+        rename(cluster = ci_result) %>%
+        mutate(type = "Model", status = paste0("Q", c(0, 1, 2, 3, 4))) %>% 
+        pivot_wider(names_from = status, values_from = q))
+```
+
+```{r}
+ci_result_4 <- as.numeric(salso(result4$iter_assign[-(1:500), ], maxNClusters = K))
+
+data.frame(data_sim_4, ci_actual_4, ci_result_4) %>%
+  ggplot(aes(x = data_sim_4, y = data_sim_4, col = factor(ci_actual_4))) +
+  geom_point() +
+  theme_bw() + 
+  ## scale_color_manual(values=c("#69b3a2", "#404080")) +
+  geom_vline(xintercept = quantile(data_sim_4[ci_result_4 == 1], c(0, 1)), 
+             linetype = "dotted", color = "#69b3a2", size = 1.5) +
+  geom_vline(xintercept = quantile(data_sim_4[ci_result_4 == 2], c(0, 1)), 
+             linetype = "dotted", color = "#404080", size = 1.5) +
+  geom_vline(xintercept = quantile(data_sim_4[ci_result_4 == 3], c(0, 1)), 
+             linetype = "dotted", color = "red", size = 1.5) +
+  geom_vline(xintercept = quantile(data_sim_4[ci_result_4 == 4], c(0, 1)), 
+             linetype = "dotted", color = "orange", size = 1.5) +
+  labs(col = "Actual", x = "Data", y = "Data")
+```

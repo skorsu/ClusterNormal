@@ -25,6 +25,10 @@ samp_new <- function(log_prob_mat) {
     .Call(`_ClusterNormal_samp_new`, log_prob_mat)
 }
 
+log_marginal <- function(clus_assign, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_log_marginal`, clus_assign, y, a_sigma, b_sigma, lambda, mu0)
+}
+
 log_likelihood <- function(clus_assign, y, a_sigma, b_sigma, lambda, mu0) {
     .Call(`_ClusterNormal_log_likelihood`, clus_assign, y, a_sigma, b_sigma, lambda, mu0)
 }

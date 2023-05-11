@@ -262,6 +262,40 @@ int samp_new(arma::mat log_prob_mat){
   return x[0];
 }
 
+// [[Rcpp::export]]
+double log_marginal(arma::vec clus_assign, arma::vec y, arma::vec a_sigma, 
+                    arma::vec b_sigma, arma::vec lambda, arma::vec mu0){
+  
+  double result = 0.0;
+  
+  /* Description: This is the function for calculating the marginal of the data.  
+   * Output: log marginal probability.
+   * Input: vector of the cluster assignment (clus_assign), data (y), 
+   *        data hyperparameters (a_sigma, b_sigma, lambda, mu0).
+   */
+  
+  arma::uvec ci = arma::conv_to<arma::uvec>::from(clus_assign);
+  
+  // Select the hyperparameters for each observation based on its cluster.
+  arma::vec a_ci = a_sigma.rows(ci - 1);
+  arma::vec b_ci = b_sigma.rows(ci - 1);
+  arma::vec lambda_ci = lambda.rows(ci - 1);
+  arma::vec mu0_ci = mu0.rows(ci - 1);
+  
+  // Calculate the marginal parameters
+  arma::vec an = a_ci + 0.5;
+  arma::vec inv_Vn = lambda_ci + 1;
+  arma::vec mu_n = (y + (mu0_ci % lambda_ci)) / inv_Vn;
+  arma::vec bn = arma::pow(y, 2) + 
+    (arma::pow(mu0_ci, 2) % lambda_ci) - (arma::pow(mu_n, 2) % inv_Vn);
+  bn *= 0.5;
+  bn += b_ci;
+  
+  std::cout << "mu_n: " << mu_n << std::endl;
+  std::cout << "bn: " << bn << std::endl;
+  
+  return result;
+}
 
 
 // [[Rcpp::export]]
@@ -628,8 +662,8 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
   }
   
   // (5) Evaluate the proposal by using MH
-  log_A += log_likelihood(proposed_assign, y, a_sigma, b_sigma, lambda, mu0);
-  log_A -= log_likelihood(old_assign, y, a_sigma, b_sigma, lambda, mu0);
+  // log_A += log_likelihood(proposed_assign, y, a_sigma, b_sigma, lambda, mu0);
+  // log_A -= log_likelihood(old_assign, y, a_sigma, b_sigma, lambda, mu0);
 
   // std::cout << "log_lik_old: " << log_likelihood(old_assign, y, a_sigma, b_sigma, lambda, mu0) << std::endl;
   // std::cout << "log_lik_pro: " << log_likelihood(proposed_assign, y, a_sigma, b_sigma, lambda, mu0) << std::endl;
