@@ -3,10 +3,6 @@
 
 #define pi 3.141592653589793238462643383280
 
-// Note to self: ---------------------------------------------------------------
-// * FMM: Complete (updated on 3/22/2023)
-// * Our model: First draft is done!
-
 // User-defined function: ------------------------------------------------------
 // [[Rcpp::export]]
 arma::vec log_sum_exp(arma::vec log_unnorm_prob){
@@ -265,6 +261,8 @@ int samp_new(arma::mat log_prob_mat){
   
   return x[0];
 }
+
+
 
 // [[Rcpp::export]]
 double log_likelihood(arma::vec clus_assign, arma::vec y, arma::vec a_sigma, 
