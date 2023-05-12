@@ -31,6 +31,7 @@ log_marginal(ci_actual, y, a_sigma, b_sigma, lambda, mu0)
 
 i <- 10
 
+log(sqrt(2 * pi))
 
 
 

@@ -291,8 +291,17 @@ double log_marginal(arma::vec clus_assign, arma::vec y, arma::vec a_sigma,
   bn *= 0.5;
   bn += b_ci;
   
-  std::cout << "mu_n: " << mu_n << std::endl;
-  std::cout << "bn: " << bn << std::endl;
+  // Calculate the log marginal probability for each observation
+  arma::vec lmar(clus_assign.size(), arma::fill::value(-0.5 * std::log(2 * pi)));
+  lmar += arma::lgamma(an);
+  lmar -= arma::lgamma(a_ci);
+  lmar += (0.5 * arma::log(lambda_ci));
+  lmar -= (0.5 * arma::log(inv_Vn));
+  lmar += (a_ci % arma::log(b_ci));
+  lmar -= (an % arma::log(bn));
+  
+  // Calculate the sum of the log marginal
+  result += arma::accu(lmar);
   
   return result;
 }
@@ -662,8 +671,8 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
   }
   
   // (5) Evaluate the proposal by using MH
-  // log_A += log_likelihood(proposed_assign, y, a_sigma, b_sigma, lambda, mu0);
-  // log_A -= log_likelihood(old_assign, y, a_sigma, b_sigma, lambda, mu0);
+  log_A += log_marginal(proposed_assign, y, a_sigma, b_sigma, lambda, mu0);
+  log_A -= log_marginal(old_assign, y, a_sigma, b_sigma, lambda, mu0);
 
   // std::cout << "log_lik_old: " << log_likelihood(old_assign, y, a_sigma, b_sigma, lambda, mu0) << std::endl;
   // std::cout << "log_lik_pro: " << log_likelihood(proposed_assign, y, a_sigma, b_sigma, lambda, mu0) << std::endl;

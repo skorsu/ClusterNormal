@@ -17,7 +17,7 @@ library(gridExtra)
 library(doParallel)
 library(mclustcomp)
 library(factoextra)
-library(PReMiuM) ## Dirichlet Process
+# library(PReMiuM) ## Dirichlet Process
 library(AntMAN) ## Mixture of Finite Mixture
 ```
 
