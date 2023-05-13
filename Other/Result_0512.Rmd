@@ -121,7 +121,7 @@ b_sigma_vec <- rep(1, K)
 lambda_vec <- rep(1, K)
 a_theta <- 1
 b_theta <- 1
-sm_iter <- 25
+sm_iter <- 10
 
 set.seed(seed_val)
 start_time <- Sys.time()

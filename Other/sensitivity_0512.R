@@ -20,9 +20,9 @@ n_unique <- function(vec){
 ### Sensitivity Analysis
 ### Use the same dataset across the different sets of hyperparameter.
 ### (3.1) and (3.3) in draft. (sigma = 1 and 3 respectively.)
-set.seed(24750)
+set.seed(2)
 clus_actual <- rep(1:2, 250)[sample(1:500)]
-dat <- rnorm(500, c(5, -5)[clus_actual], 1)
+dat <- rnorm(500, c(5, -5)[clus_actual], 3)
 data.frame(clus_actual, dat) %>%
   ggplot(aes(x = dat, fill = factor(clus_actual))) +
   geom_histogram(alpha=0.6, position = 'identity', bins = 50) +
@@ -111,7 +111,9 @@ for(i in 1:15){
 colnames(accept_prob) <- c("Merge", "Split", "Overall")
 
 dat1 <- data.frame(comp_time = run_time_vec, ac_prob = accept_prob[, 3], 
-                   group_launch = hyper_set[, "iter"])
+                   jacc_vec, vi_vec)
+
+cbind(hyper_set, dat1)
 p1 <- ggplot(dat1, aes(x = comp_time, y = ac_prob, color = factor(group_launch))) +
   geom_point() +
   theme_bw() +
