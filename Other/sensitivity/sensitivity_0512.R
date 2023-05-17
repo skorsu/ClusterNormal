@@ -35,7 +35,7 @@ f_data_sim <- function(sim_seed, actual_K, overlap){
     if(overlap == FALSE){
       ## Scenario 2
       print("Scenario 2")
-      dat <- rnorm(500, c(-100, -50, -20, 50, 100)[actual_clus], 1)
+      dat <- rnorm(500, c(-100, -50, 0, 50, 100)[actual_clus], 1)
     } else {
       ### Scenario 4
       print("Scenario 4")
