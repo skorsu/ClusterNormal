@@ -77,25 +77,37 @@ dat <- f_data_sim(1, 2, FALSE)
 p1 <- ggplot(dat, aes(x = dat, group = factor(actual_clus))) +
   geom_density() +
   theme_bw() +
-  labs(title = "Scenario 1: 2 separated clusters", x = "Data", y = "Density")
+  labs(title = "Scenario 1: 2 separated clusters", x = "Data", y = "Density") +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        plot.title = element_text(size = 28))
 
 dat <- f_data_sim(1, 5, FALSE)
 p2 <- ggplot(dat, aes(x = dat, group = factor(actual_clus))) +
   geom_density() +
   theme_bw() +
-  labs(title = "Scenario 2: 5 separated clusters", x = "Data", y = "Density")
+  labs(title = "Scenario 2: 5 separated clusters", x = "Data", y = "Density") +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        plot.title = element_text(size = 28))
 
 dat <- f_data_sim(1, 2, TRUE)
 p3 <- ggplot(dat, aes(x = dat, group = factor(actual_clus))) +
   geom_density() +
   theme_bw() +
-  labs(title = "Scenario 3: 2 mixing clusters", x = "Data", y = "Density")
+  labs(title = "Scenario 3: 2 mixing clusters", x = "Data", y = "Density") +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        plot.title = element_text(size = 28))
 
 dat <- f_data_sim(1, 5, TRUE)
 p4 <- ggplot(dat, aes(x = dat, group = factor(actual_clus))) +
   geom_density() +
   theme_bw() +
-  labs(title = "Scenario 4: 5 mixing clusters", x = "Data", y = "Density")
+  labs(title = "Scenario 4: 5 mixing clusters", x = "Data", y = "Density") +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        plot.title = element_text(size = 28))
 
 grid.arrange(p1, p2, p3, p4)
 
