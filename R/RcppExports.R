@@ -57,6 +57,10 @@ SFDM_SM <- function(K, old_assign, old_alpha, xi, y, mu0, a_sigma, b_sigma, lamb
     .Call(`_ClusterNormal_SFDM_SM`, K, old_assign, old_alpha, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, launch_iter)
 }
 
+SFDM_alpha <- function(clus_assign, xi, old_alpha, old_u) {
+    .Call(`_ClusterNormal_SFDM_alpha`, clus_assign, xi, old_alpha, old_u)
+}
+
 SFDM_model <- function(iter, K, init_assign, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, print_iter) {
     .Call(`_ClusterNormal_SFDM_model`, iter, K, init_assign, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, print_iter)
 }

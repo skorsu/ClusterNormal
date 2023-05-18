@@ -674,9 +674,6 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
   log_A += log_marginal(proposed_assign, y, a_sigma, b_sigma, lambda, mu0);
   log_A -= log_marginal(old_assign, y, a_sigma, b_sigma, lambda, mu0);
 
-  // std::cout << "log_lik_old: " << log_likelihood(old_assign, y, a_sigma, b_sigma, lambda, mu0) << std::endl;
-  // std::cout << "log_lik_pro: " << log_likelihood(proposed_assign, y, a_sigma, b_sigma, lambda, mu0) << std::endl;
-  
   log_A += log_gamma_cluster(all_alpha, xi, proposed_assign);
   log_A -= log_gamma_cluster(all_alpha, xi, old_assign);
   
@@ -701,13 +698,6 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
     }
   }
   
-  // std::cout << "Unique: old " << arma::unique(old_assign) << std::endl;
-  // std::cout << "Unique: proposed " << arma::unique(proposed_assign) << std::endl;
-  // std::cout << arma::join_rows(old_alpha, new_alpha) << std::endl;
-  
-  // std::cout << "Current: " << old_assign[samp_obs[0]] << ", " << old_assign[samp_obs[1]] << std::endl;
-  // std::cout << "samp_clus: " << samp_clus[0] << ", " << samp_clus[1] << std::endl;
-  
   result["new_assign"] = new_assign;
   result["new_alpha"] = new_alpha;
   result["log_A"] = log_A;
@@ -717,6 +707,42 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
   return result;
 }
 
+// Step 4: Update alpha: -------------------------------------------------------
+// [[Rcpp::export]]
+Rcpp::List SFDM_alpha(arma::vec clus_assign, arma::vec xi, arma::vec old_alpha,
+                      double old_u){
+  
+  /* Description: This function will update the alpha vector, and the auxiliary 
+   *              variable. The derivation of this function is based on Matt's 
+   *              Dirichlet Data Augmentation Trick document.
+   * Output: An updated auxiliary variable (new_u) and alpha vector (new_alpha).
+   * Input: The cluster assignment (clus_assign), cluster concentration (xi), 
+   *        previous alpha vector (old_alpha), previous auxiliary variable (old_u).
+   */
+  
+  Rcpp::List result;
+  arma::vec new_alpha(old_alpha); 
+  
+  // Update alpha
+  arma::vec active_clus = arma::unique(clus_assign);
+  for(int k = 0; k < active_clus.size(); ++k){
+    int current_c = active_clus[k];
+    arma::uvec nk = arma::find(clus_assign == current_c);
+    double scale_gamma = 1/(1 + old_u); // change the rate to scale parameter
+    new_alpha.row(current_c - 1).fill(R::rgamma(nk.size() + xi[current_c - 1],
+                                      scale_gamma));
+  }
+  
+  // Update U
+  int n = clus_assign.size();
+  double scale_u = 1/arma::accu(new_alpha);
+  double new_U = R::rgamma(n, scale_u);
+  
+  result["new_alpha"] = new_alpha;
+  result["new_u"] = new_U;
+  return result;
+  
+}
 // Final Function: -------------------------------------------------------------
 // [[Rcpp::export]]
 Rcpp::List SFDM_model(int iter, int K, arma::vec init_assign, arma::vec xi,
@@ -748,12 +774,14 @@ Rcpp::List SFDM_model(int iter, int K, arma::vec init_assign, arma::vec xi,
     init_alpha.row(init_unique[k] - 1).fill(R::rgamma(xi[init_unique[k] - 1], 1.0));
   }
   
-  // std::cout << "Init_alpha" << init_alpha << std::endl;
+  // Initial u (auxiliary variable)
+  double init_u = R::rgamma(y.size(), 1/(arma::accu(init_alpha)));
 
   // Objects for storing the intermediate result
   Rcpp::List alloc_List;
   Rcpp::List sm_List;
-
+  Rcpp::List alpha_update_List;
+  
   // Create vectors/matrices for storing the final result
   arma::mat iter_assign(y.size(), iter, arma::fill::value(-1));
   arma::mat iter_alpha(K, iter, arma::fill::value(-1));
@@ -775,17 +803,23 @@ Rcpp::List SFDM_model(int iter, int K, arma::vec init_assign, arma::vec xi,
 
     arma::vec sm_assign = sm_List["new_assign"];
     arma::vec sm_alpha = sm_List["new_alpha"];
+    
+    // Update alpha vector (and u)
+    alpha_update_List = SFDM_alpha(sm_assign, xi, sm_alpha, init_u);
+    arma::vec alpha_updated = alpha_update_List["new_alpha"];
+    double u_updated = alpha_update_List["new_u"];
 
     // Store the result
     iter_assign.col(i) = sm_assign;
-    iter_alpha.col(i) = sm_alpha;
+    iter_alpha.col(i) = alpha_updated;
     iter_log_A.row(i).fill(sm_List["log_A"]);
     split_or_merge.row(i).fill(sm_List["split_index"]);
     sm_status.row(i).fill(sm_List["accept_proposed"]);
     
     // Initialize for the next iteration
     init_assign = sm_assign;
-    init_alpha = sm_alpha;
+    init_alpha = alpha_updated;
+    init_u = u_updated;
 
     // Print the result
     if(((i + 1) - (floor((i + 1)/print_iter) * print_iter)) == 0){

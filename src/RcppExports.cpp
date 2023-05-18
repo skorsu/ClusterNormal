@@ -233,6 +233,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// SFDM_alpha
+Rcpp::List SFDM_alpha(arma::vec clus_assign, arma::vec xi, arma::vec old_alpha, double old_u);
+RcppExport SEXP _ClusterNormal_SFDM_alpha(SEXP clus_assignSEXP, SEXP xiSEXP, SEXP old_alphaSEXP, SEXP old_uSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type clus_assign(clus_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type xi(xiSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type old_alpha(old_alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type old_u(old_uSEXP);
+    rcpp_result_gen = Rcpp::wrap(SFDM_alpha(clus_assign, xi, old_alpha, old_u));
+    return rcpp_result_gen;
+END_RCPP
+}
 // SFDM_model
 Rcpp::List SFDM_model(int iter, int K, arma::vec init_assign, arma::vec xi, arma::vec y, arma::vec mu0, arma::vec a_sigma, arma::vec b_sigma, arma::vec lambda, double a_theta, double b_theta, int sm_iter, int print_iter);
 RcppExport SEXP _ClusterNormal_SFDM_model(SEXP iterSEXP, SEXP KSEXP, SEXP init_assignSEXP, SEXP xiSEXP, SEXP ySEXP, SEXP mu0SEXP, SEXP a_sigmaSEXP, SEXP b_sigmaSEXP, SEXP lambdaSEXP, SEXP a_thetaSEXP, SEXP b_thetaSEXP, SEXP sm_iterSEXP, SEXP print_iterSEXP) {
@@ -315,6 +329,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_log_prior", (DL_FUNC) &_ClusterNormal_log_prior, 2},
     {"_ClusterNormal_SFDM_allocate", (DL_FUNC) &_ClusterNormal_SFDM_allocate, 9},
     {"_ClusterNormal_SFDM_SM", (DL_FUNC) &_ClusterNormal_SFDM_SM, 12},
+    {"_ClusterNormal_SFDM_alpha", (DL_FUNC) &_ClusterNormal_SFDM_alpha, 4},
     {"_ClusterNormal_SFDM_model", (DL_FUNC) &_ClusterNormal_SFDM_model, 13},
     {"_ClusterNormal_rcpparma_hello_world", (DL_FUNC) &_ClusterNormal_rcpparma_hello_world, 0},
     {"_ClusterNormal_rcpparma_outerproduct", (DL_FUNC) &_ClusterNormal_rcpparma_outerproduct, 1},
