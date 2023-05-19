@@ -1,6 +1,14 @@
 rm(list = ls())
 
-### Required Packages
+### FIX ME: --------------------------------------------------------------------
+overall_seed <- 30184
+n_para <- 30
+scenario_now <- 1 ## Scenario
+save_path <- NULL ## The location where we will save the result
+save_name <- paste0("sensitivity_", scenario_now, ".RData") ## Result file
+###: ---------------------------------------------------------------------------
+
+### Required Packages: ---------------------------------------------------------
 library(salso)
 library(ggplot2)
 library(ClusterNormal)
@@ -9,78 +17,55 @@ library(mclustcomp)
 library(foreach)
 library(doParallel)
 library(doRNG)
+###: ---------------------------------------------------------------------------
 
-### User-defined functions
+### User-defined functions: ----------------------------------------------------
 ### Function: Simulating the data based on the scenario
-f_data_sim <- function(sim_seed, actual_K, overlap){
+f_data_sim <- function(sim_seed, scenario_index){
+  
   ### place for storing result.
   actual_clus <- NULL
   dat <- NULL
   
-  ### simulate the data
   set.seed(sim_seed)
-  if(actual_K == 2){ ### Scenario 1 and 3
-    actual_clus <- rep(1:2, 250)[sample(1:500)]
-    if(overlap == FALSE){
-      ## Scenario 1
-      print("Scenario 1")
-      dat <- rnorm(500, c(5, -5)[actual_clus], 1)
-    } else {
-      ### Scenario 3
-      print("Scenario 3")
-      dat <- rnorm(500, c(5, -5)[actual_clus], 3)
-    }
-  } else if(actual_K == 5){ ### Scenario 2 and 4
-    actual_clus <- rep(1:5, 100)[sample(1:500)]
-    if(overlap == FALSE){
-      ## Scenario 2
-      print("Scenario 2")
-      dat <- rnorm(500, c(-100, -50, 0, 50, 100)[actual_clus], 1)
-    } else {
-      ### Scenario 4
-      print("Scenario 4")
-      dat <- rnorm(500, c(-10, -5, 0, 20, 40)[actual_clus], 
-                   c(1.5, 1.5, 1.5, 3, 3)[actual_clus])
-    }
+  
+  if(! scenario_index %in% 1:4){
+    warning("invalid scenario. we have only 4 scenarios")
   } else {
-    warning("invalid values of the actual clusters. (actual_K)")
+    if(scenario_index == 1){
+      actual_clus <- sample(1:2, 500, replace = TRUE)
+      dat <- rnorm(500, c(-5, 5)[actual_clus])
+    } else if(scenario_index == 2){
+      actual_clus <- sample(1:5, 500, replace = TRUE)
+      dat <- rnorm(500, (c(-20, -10, 0, 10, 20)/2)[actual_clus])
+    } else if(scenario_index == 3){
+      actual_clus <- sample(1:2, 500, replace = TRUE)
+      dat <- rnorm(500, c(-5, 5)[actual_clus], 3)
+    } else {
+      actual_clus <- sample(1:5, 500, replace = TRUE)
+      dat <- rnorm(500, (c(0, 7.5, 15, 25, 35)/2)[actual_clus])
+    }
   }
   
   ### return the simulated data
   result <- data.frame(actual_clus, dat)
   return(result)
 }
+###: ---------------------------------------------------------------------------
 
-### Sensitivity Analysis
-### Updated 3/14/2023: Perform a sensitivity analysis for all four scenarios.
+### Sensitivity Analysis: ------------------------------------------------------
+### Updated 3/18/2023: Perform a sensitivity analysis for all four scenarios.
 
 ### Step 1: Simulate the data based on the scenarios
 ### Using the "f_data_sim" function.
 
-n_cluster <- 2 ## **FIX HERE: We can choose only 2 or 5.
-group_overlap <- FALSE ## **FIX HERE
-
 ### Simulate the data for paralleled
-n_para <- 30
-set.seed(31807)
+set.seed(overall_seed)
 registerDoParallel(detectCores() - 1)
 list_data <- foreach(i = 1:n_para) %dorng%{
-  return(f_data_sim(2, n_cluster, group_overlap))
+  return(f_data_sim(overall_seed + i, scenario_now))
 }
 stopImplicitCluster()
-
-### (Optional) Step O1: Create a plot to see the data
-### Choose the color for each group
-optional_plot <- FALSE
-if(optional_plot == TRUE){
-  col_code <- c("salmon", "#321aba", "#69b3a2", "#908121", "#E2134A")
-  
-  ggplot(list_data[[1]], aes(x = dat, fill = factor(actual_clus))) +
-    geom_histogram(alpha = 0.6, position = 'identity', bins = 50) +
-    scale_fill_manual(values = col_code[unique(list_data[[1]]$actual_clus)]) +
-    theme_bw() +
-    labs(fill="", x = "Data", y = "")
-}
 
 ### Step 2: Create a set of hyperparameter 
 ### Hyperparameter: (K, xi, lambda, a_sigma, b_sigma, b_theta, iter_launch)
@@ -168,5 +153,7 @@ stopImplicitCluster()
 print(Sys.time() - overall_start)
 
 ### Step 4: Save the result
-save(list_result, file = "simu_result_scenario_x.RData") ## **FIX HERE
+save(list_result, file = save_name)
+
+###: ---------------------------------------------------------------------------
 

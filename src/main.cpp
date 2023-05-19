@@ -595,8 +595,6 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
 
   Rcpp::List result;
   
-  // std::cout << "old_alpha: " << old_alpha << std::endl;
-  
   // (0) Create variables
   int n = old_assign.size(); // Number of the observations
   arma::uvec active_clus = arma::conv_to<arma::uvec>::from(arma::unique(old_assign));
