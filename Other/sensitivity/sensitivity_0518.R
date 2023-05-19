@@ -5,7 +5,7 @@ overall_seed <- 30184
 n_para <- 30
 scenario_now <- 1 ## Scenario
 save_path <- NULL ## The location where we will save the result
-save_name <- paste0("sensitivity_", scenario_now, ".RData") ## Result file
+save_name <- paste0(save_path, "sensitivity_", scenario_now, ".RData")
 ###: ---------------------------------------------------------------------------
 
 ### Required Packages: ---------------------------------------------------------
