@@ -37,13 +37,13 @@ f_data_sim <- function(sim_seed, scenario_index){
       dat <- rnorm(500, c(-5, 5)[actual_clus])
     } else if(scenario_index == 2){
       actual_clus <- sample(1:5, 500, replace = TRUE)
-      dat <- rnorm(500, (c(-20, -10, 0, 10, 20)/2)[actual_clus])
+      dat <- rnorm(500, (c(0, 7.5, 15, 25, 35))[actual_clus])
     } else if(scenario_index == 3){
       actual_clus <- sample(1:2, 500, replace = TRUE)
       dat <- rnorm(500, c(-5, 5)[actual_clus], 3)
     } else {
       actual_clus <- sample(1:5, 500, replace = TRUE)
-      dat <- rnorm(500, (c(0, 7.5, 15, 25, 35)/2)[actual_clus])
+      dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[actual_clus], 3)
     }
   }
   
@@ -51,6 +51,7 @@ f_data_sim <- function(sim_seed, scenario_index){
   result <- data.frame(actual_clus, dat)
   return(result)
 }
+
 ###: ---------------------------------------------------------------------------
 
 ### Sensitivity Analysis: ------------------------------------------------------
