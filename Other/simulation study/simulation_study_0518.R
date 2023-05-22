@@ -3,7 +3,7 @@ rm(list = ls())
 ### FIX ME: --------------------------------------------------------------------
 overall_seed <- 30184
 n_para <- 5
-scenario_now <- 4 ## Scenario
+scenario_now <- 2 ## Scenario
 save_path <- NULL ## The location where we will save the result
 save_name <- paste0(save_path, "simulation_", scenario_now, ".RData")
 ###: ---------------------------------------------------------------------------
@@ -154,16 +154,16 @@ result_test <- foreach(i = 1:n_para) %dorng%{
   AntMAN_MCMC <- AM_mcmc_parameters(niter = 1000, burnin = 500, thin = 1,
                                     verbose = 1, output = c("CI", "K"), 
                                     parallel = FALSE, output_dir = NULL)
-  data_hyper <- AM_mix_hyperparams_uninorm(m0 = 0, k0 = hyper_set$lambda, 
-                                           nu0 = hyper_set$a_sigma, 
-                                           sig02 = hyper_set$b_sigma)
-  Kmax_dist <- AM_mix_components_prior_dirac(hyper_set$K_max)
+  data_hyper <- AM_mix_hyperparams_uninorm(m0 = 0, k0 = 1, 
+                                           nu0 = 1, 
+                                           sig02 = 1)
+  Kmax_dist <- AM_mix_components_prior_dirac(5)
   cluster_hyper <- AM_mix_weights_prior_gamma(a = hyper_set$xi, b = 1)
   AntMAN_start <- Sys.time()
   AntMAN_mod <- AntMAN::AM_mcmc_fit(y = as.numeric(scale_dat),
-                                    initial_clustering = rep(1, 500),
+                                    ## initial_clustering = rep(1, 500),
                                     mix_kernel_hyperparams = data_hyper,
-                                    mix_components_prior = Kmax_dist,
+                                    ## mix_components_prior = Kmax_dist,
                                     mix_weight_prior = cluster_hyper,
                                     mcmc_parameters = AntMAN_MCMC)
   result_mat[, 5] <- as.numeric(salso(AM_clustering(AntMAN_mod), 
@@ -200,7 +200,7 @@ result_test <- foreach(i = 1:n_para) %dorng%{
                 AntMAN = length(unique(result_mat[, 5])),
                 DP = length(unique(result_mat[, 6])),
                 SFDM = length(unique(result_mat[, 7])))
-  return(list(cluster = result_mat, time = comp_time, n_clus = n_clus))
+  return(list(AntMAN_mod = AntMAN_mod, cluster = result_mat, time = comp_time, n_clus = n_clus))
 }
 stopImplicitCluster()
 
@@ -208,3 +208,9 @@ print(Sys.time() - overall_time)
 
 ### Save the result
 save(result_test, file = save_name)
+
+
+salso(result_test[[1]]$AntMAN_mod)
+AM_salso(AntMAN::AM_clustering(result_test[[1]]$AntMAN_mod), loss = "VI")
+ 
+
