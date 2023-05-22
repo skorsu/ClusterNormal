@@ -2,11 +2,10 @@ rm(list = ls())
 
 ### FIX ME: --------------------------------------------------------------------
 overall_seed <- 30184
-n_para <- 2
-scenario_now <- 2 ## Scenario
+n_para <- 5
+scenario_now <- 4 ## Scenario
 save_path <- NULL ## The location where we will save the result
-save_name <- paste0(save_path, "sensitivity_", scenario_now, ".RData")
-em_option <- .EMControl(short.iter = 1) ### Option for the EM algorithm
+save_name <- paste0(save_path, "simulation_", scenario_now, ".RData")
 ###: ---------------------------------------------------------------------------
 
 ### Required Packages: ---------------------------------------------------------
@@ -17,6 +16,7 @@ library(EMCluster) ### For EM algorithm
 library(AntMAN) ### For finite of finite mixture
 library(PReMiuM) ### For the Dirichlet Process
 library(salso)
+em_option <- .EMControl(short.iter = 1) ### Option for the EM algorithm
 
 library(tidyverse)
 library(mclustcomp)
@@ -109,6 +109,7 @@ hyper_set <- list(list(K_max = 10, xi = 0.1, lambda = 1, a_sigma = 1,
 hyper_set <- hyper_set[[scenario_now]]
 
 ### Begin the process
+overall_time <- Sys.time()
 result_test <- foreach(i = 1:n_para) %dorng%{
   
   ### Prepare for the algorithms
@@ -182,15 +183,28 @@ result_test <- foreach(i = 1:n_para) %dorng%{
   result_mat[, 6] <- DP_clus$clustering
   DP_time <- Sys.time() - DP_start
   
+  ### SFDM
+  SFDM_start <- Sys.time()
+  SFDM_result <- SFDM_model(1000, hyper_set$K_max, rep(1, 500), 
+                       rep(hyper_set$xi, hyper_set$K_max), scale_dat, 
+                       rep(0, hyper_set$K_max), rep(hyper_set$a_sigma, hyper_set$K_max), 
+                       rep(hyper_set$b_sigma, hyper_set$K_max), rep(hyper_set$lambda, hyper_set$K_max), 
+                       1, hyper_set$b_theta, hyper_set$sm_iter, 250)
+  result_mat[, 7] <- as.numeric(salso(SFDM_result$iter_assign[-(1:500), ]))
+  SFDM_time <- Sys.time() - SFDM_start
+  
   ### Return the result
   comp_time <- list(k_means = kmeans_time, pam = pam_time, EM = EM_time,
-                    AntMAN = AntMAN_time, DP = DP_time)
+                    AntMAN = AntMAN_time, DP = DP_time, SFDM = SFDM_time)
   n_clus = list(k_means = kmean_opt, pam = pam_opt, EM = EM_opt,
                 AntMAN = length(unique(result_mat[, 5])),
-                DP = length(unique(result_mat[, 6])))
+                DP = length(unique(result_mat[, 6])),
+                SFDM = length(unique(result_mat[, 7])))
   return(list(cluster = result_mat, time = comp_time, n_clus = n_clus))
 }
 stopImplicitCluster()
 
-result_test[[1]]$cluster[, 6]
+print(Sys.time() - overall_time)
 
+### Save the result
+save(result_test, file = save_name)
