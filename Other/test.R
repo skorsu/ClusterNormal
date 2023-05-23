@@ -12,6 +12,7 @@ library(metRology)
 library(ggplot2)
 library(gridExtra)
 library(xtable)
+library(mclustcomp)
 
 ### Required Commands for building the packages: -------------------------------
 uninstall()
@@ -27,6 +28,29 @@ n_unique <- function(clus_vec){
 }
 
 ### Sandbox: -------------------------------------------------------------------
+set.seed(12)
+K <- 5
+n <- 50
+ci_true <- c(sample(c(2, 5, 1), n, replace = TRUE), 4)
+dat <- rnorm(n+1, c(-5, -2.5, 0, 2.5, 5)[ci_true])
+mu0_vec <- rep(0, K)
+a_sigma_vec <- rep(5:1, 1)
+b_sigma_vec <- rep(1, K)
+lambda_vec <- rep(1:5, 1)
+
+log_marginal_new(ci_true, dat, a_sigma_vec, b_sigma_vec, lambda_vec, mu0_vec)
+sum(ci_true == 2)
+
+data.frame(ci_true) %>%
+  group_by(ci_true) %>%
+  summarise(n = n()) %>%
+  cbind(lb = lambda_vec[-3], a = a_sigma_vec[-3]) %>%
+  group_by(ci_true) %>%
+  summarise(step5 = (-(n/2) * log(2 * pi)) + (0.5 * log(lb + n)) - (0.5 * log(lb)) +
+              lgamma(a + (0.5 * n)) - lgamma(a))
+
+0.5 * ((1 * sum(ci_true == 4))/(1 + sum(ci_true == 4))) * (0 - mean(dat[ci_true == 4]))^2
+
 dat_list <- list(list(NA, NA, NA, NA), list(NA, NA, NA, NA), 
                  list(NA, NA, NA, NA), list(NA, NA, NA, NA))
 dat_list[[1]][[1]] <- c(-20, -10, 0, 10, 20)/2
@@ -66,10 +90,9 @@ load(paste0("/Users/kevin-imac/Desktop/Result/Sensitivity/archive/sensitivity_2.
 sum_tab(list_result)
 
 
-set.seed(143)
-## c(-20, -10, 0, 10, 20)/2
+set.seed(56327189)
 ci_true <- sample(1:5, 500, replace = TRUE)
-dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true], 3)
+dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true], 1)
 ggplot(data.frame(x = ci_true, y = dat), aes(x = y, group = x)) +
   geom_density()
 hist(dat, breaks = 100)
@@ -78,10 +101,10 @@ data.frame(x = ci_true, y = scale(dat)) %>%
   summarise(mean = mean(y), var = var(y))
 
 clus_init <- rep(1:500, 1)
-K <- 500
+K <- 10
 xi_vec <- rep(0.1, K)
 mu0_vec <- rep(0, K)
-a_sigma_vec <- rep(100, K)
+a_sigma_vec <- rep(1, K)
 b_sigma_vec <- rep(1, K)
 lambda_vec <- rep(1, K)
 a_theta <- 1
@@ -92,7 +115,13 @@ model <- SFDM_model(1000, K, clus_init, xi_vec, scale(dat), mu0_vec,
                     a_sigma_vec, b_sigma_vec, lambda_vec, a_theta, b_theta, 
                     sm_iter, 250)
 
+model$iter_alpha
+
+table(model$sm_status, model$split_or_merge)
+
 table(salso(model$iter_assign[-c(1:500), ]), ci_true)
+
+mclustcomp(as.numeric(salso(model$iter_assign[-c(1:500), ])), ci_true)
 
 apply(model$iter_assign, 1, n_unique)
 

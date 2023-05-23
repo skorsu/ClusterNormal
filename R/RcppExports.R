@@ -25,10 +25,6 @@ samp_new <- function(log_prob_mat) {
     .Call(`_ClusterNormal_samp_new`, log_prob_mat)
 }
 
-log_marginal <- function(clus_assign, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_log_marginal`, clus_assign, y, a_sigma, b_sigma, lambda, mu0)
-}
-
 log_likelihood <- function(clus_assign, y, a_sigma, b_sigma, lambda, mu0) {
     .Call(`_ClusterNormal_log_likelihood`, clus_assign, y, a_sigma, b_sigma, lambda, mu0)
 }
@@ -47,6 +43,10 @@ log_proposal <- function(c1, c2, S, s_clus, y, xi, mu0, a_sigma, b_sigma, lambda
 
 log_prior <- function(clus_assign, xi) {
     .Call(`_ClusterNormal_log_prior`, clus_assign, xi)
+}
+
+log_marginal <- function(clus_assign, y, a_sigma, b_sigma, lambda, mu0) {
+    .Call(`_ClusterNormal_log_marginal`, clus_assign, y, a_sigma, b_sigma, lambda, mu0)
 }
 
 SFDM_allocate <- function(K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {

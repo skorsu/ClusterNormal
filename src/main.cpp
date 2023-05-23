@@ -263,51 +263,6 @@ int samp_new(arma::mat log_prob_mat){
 }
 
 // [[Rcpp::export]]
-double log_marginal(arma::vec clus_assign, arma::vec y, arma::vec a_sigma, 
-                    arma::vec b_sigma, arma::vec lambda, arma::vec mu0){
-  
-  double result = 0.0;
-  
-  /* Description: This is the function for calculating the marginal of the data.  
-   * Output: log marginal probability.
-   * Input: vector of the cluster assignment (clus_assign), data (y), 
-   *        data hyperparameters (a_sigma, b_sigma, lambda, mu0).
-   */
-  
-  arma::uvec ci = arma::conv_to<arma::uvec>::from(clus_assign);
-  
-  // Select the hyperparameters for each observation based on its cluster.
-  arma::vec a_ci = a_sigma.rows(ci - 1);
-  arma::vec b_ci = b_sigma.rows(ci - 1);
-  arma::vec lambda_ci = lambda.rows(ci - 1);
-  arma::vec mu0_ci = mu0.rows(ci - 1);
-  
-  // Calculate the marginal parameters
-  arma::vec an = a_ci + 0.5;
-  arma::vec inv_Vn = lambda_ci + 1;
-  arma::vec mu_n = (y + (mu0_ci % lambda_ci)) / inv_Vn;
-  arma::vec bn = arma::pow(y, 2) + 
-    (arma::pow(mu0_ci, 2) % lambda_ci) - (arma::pow(mu_n, 2) % inv_Vn);
-  bn *= 0.5;
-  bn += b_ci;
-  
-  // Calculate the log marginal probability for each observation
-  arma::vec lmar(clus_assign.size(), arma::fill::value(-0.5 * std::log(2 * pi)));
-  lmar += arma::lgamma(an);
-  lmar -= arma::lgamma(a_ci);
-  lmar += (0.5 * arma::log(lambda_ci));
-  lmar -= (0.5 * arma::log(inv_Vn));
-  lmar += (a_ci % arma::log(b_ci));
-  lmar -= (an % arma::log(bn));
-  
-  // Calculate the sum of the log marginal
-  result += arma::accu(lmar);
-  
-  return result;
-}
-
-
-// [[Rcpp::export]]
 double log_likelihood(arma::vec clus_assign, arma::vec y, arma::vec a_sigma, 
                       arma::vec b_sigma, arma::vec lambda, arma::vec mu0){
   
@@ -470,6 +425,51 @@ double log_prior(arma::vec clus_assign, arma::vec xi){
   arma::vec ni = arma::regspace(1, clus_assign.size());
   result -= arma::accu(arma::log((ni - 1) + arma::accu(xi.rows(arma::find(active_clus - 1)))));
 
+  return result;
+}
+
+// [[Rcpp::export]]
+double log_marginal(arma::vec clus_assign, arma::vec y, arma::vec a_sigma, 
+                        arma::vec b_sigma, arma::vec lambda, arma::vec mu0){
+  double result = 0.0;
+  
+  // List of the active cluster
+  arma::vec active_clus = arma::unique(clus_assign);
+  
+  // Calculate the marginal by looping through the list of the active cluster
+  for(int k = 0; k < active_clus.size(); ++k){
+    int cc = active_clus[k];
+    arma::uvec obs_index = arma::find(clus_assign == cc);
+    arma::vec y_c = y.rows(obs_index);
+    
+    // Select the hyperparameter value based on the cluster index
+    double mu0_cc = mu0[(cc - 1)];
+    double lambda_cc = lambda[(cc - 1)];
+    double a_sigma_cc = a_sigma[(cc - 1)];
+    double b_sigma_cc = b_sigma[(cc - 1)];
+    
+    // Calculate the new hyperparameter quantities
+    double y_bar = arma::mean(y_c);
+    int nk = y_c.size();
+    double b_1 = 0.5 * ((lambda_cc * nk)/(lambda_cc + nk)) * std::pow(mu0_cc - y_bar, 2.0);
+    double b_2 = 0.5 * (nk - 1) * arma::var(y_c);
+    double b_new = b_sigma_cc + b_1 + b_2;
+    double a_new = a_sigma_cc + (0.5 * nk);
+    double lambda_new = lambda_cc + nk;
+    
+    // Calculate the marginal for each cluster
+    double result_cc = -(0.5 * nk) * std::log(2 * pi);
+    result_cc += (0.5 * std::log(lambda_new));
+    result_cc -= (0.5 * std::log(lambda_cc));
+    result_cc += (std::lgamma(a_new));
+    result_cc -= (std::lgamma(a_sigma_cc));
+    result_cc += (a_sigma_cc * std::log(b_sigma_cc));
+    result_cc -= (a_new * std::log(b_new));
+    
+    // Calculate the marginal distribution for overall
+    result += result_cc;
+    }
+  
   return result;
 }
 
@@ -669,14 +669,17 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
   }
   
   // (5) Evaluate the proposal by using MH
-  log_A += log_marginal(proposed_assign, y, a_sigma, b_sigma, lambda, mu0);
-  log_A -= log_marginal(old_assign, y, a_sigma, b_sigma, lambda, mu0);
+  // log_A += log_marginal(proposed_assign, y, a_sigma, b_sigma, lambda, mu0);
+  // log_A -= log_marginal(old_assign, y, a_sigma, b_sigma, lambda, mu0);
 
+  // log_A += log_cluster_param(proposed_assign, all_alpha);
+  // log_A -= log_cluster_param(old_assign, all_alpha);
+  
   log_A += log_gamma_cluster(all_alpha, xi, proposed_assign);
   log_A -= log_gamma_cluster(all_alpha, xi, old_assign);
   
-  log_A += log_prior(proposed_assign, xi);
-  log_A -= log_prior(proposed_assign, xi);
+  // log_A += log_prior(proposed_assign, xi);
+  // log_A -= log_prior(proposed_assign, xi);
   
   arma::vec new_assign(old_assign);
   arma::vec new_alpha(all_alpha);
