@@ -25,28 +25,12 @@ samp_new <- function(log_prob_mat) {
     .Call(`_ClusterNormal_samp_new`, log_prob_mat)
 }
 
-log_likelihood <- function(clus_assign, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_log_likelihood`, clus_assign, y, a_sigma, b_sigma, lambda, mu0)
+log_marginal <- function(y, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
+    .Call(`_ClusterNormal_log_marginal`, y, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
 }
 
-log_cluster_param <- function(clus_assign, alpha) {
-    .Call(`_ClusterNormal_log_cluster_param`, clus_assign, alpha)
-}
-
-log_gamma_cluster <- function(alpha, xi, clus_assign) {
-    .Call(`_ClusterNormal_log_gamma_cluster`, alpha, xi, clus_assign)
-}
-
-log_proposal <- function(c1, c2, S, s_clus, y, xi, mu0, a_sigma, b_sigma, lambda) {
-    .Call(`_ClusterNormal_log_proposal`, c1, c2, S, s_clus, y, xi, mu0, a_sigma, b_sigma, lambda)
-}
-
-log_prior <- function(clus_assign, xi) {
-    .Call(`_ClusterNormal_log_prior`, clus_assign, xi)
-}
-
-log_marginal <- function(clus_assign, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_log_marginal`, clus_assign, y, a_sigma, b_sigma, lambda, mu0)
+log_posterior <- function(y_new, data, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
+    .Call(`_ClusterNormal_log_posterior`, y_new, data, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
 }
 
 SFDM_allocate <- function(K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {
@@ -59,10 +43,6 @@ SFDM_SM <- function(K, old_assign, old_alpha, xi, y, mu0, a_sigma, b_sigma, lamb
 
 SFDM_alpha <- function(clus_assign, xi, old_alpha, old_u) {
     .Call(`_ClusterNormal_SFDM_alpha`, clus_assign, xi, old_alpha, old_u)
-}
-
-SFDM_model <- function(iter, K, init_assign, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, print_iter) {
-    .Call(`_ClusterNormal_SFDM_model`, iter, K, init_assign, xi, y, mu0, a_sigma, b_sigma, lambda, a_theta, b_theta, sm_iter, print_iter)
 }
 
 rcpparma_hello_world <- function() {
