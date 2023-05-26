@@ -5,16 +5,20 @@ log_sum_exp <- function(log_unnorm_prob) {
     .Call(`_ClusterNormal_log_sum_exp`, log_unnorm_prob)
 }
 
-fmm_log_alloc_prob <- function(K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_fmm_log_alloc_prob`, K, i, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
+log_marginal <- function(y, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
+    .Call(`_ClusterNormal_log_marginal`, y, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
 }
 
-fmm_samp_new <- function(K, log_alloc) {
-    .Call(`_ClusterNormal_fmm_samp_new`, K, log_alloc)
+log_posterior <- function(y_new, data, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
+    .Call(`_ClusterNormal_log_posterior`, y_new, data, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
 }
 
-fmm_mod <- function(t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0) {
-    .Call(`_ClusterNormal_fmm_mod`, t, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0)
+rmultinom_1 <- function(size, probs, N) {
+    .Call(`_ClusterNormal_rmultinom_1`, size, probs, N)
+}
+
+fmm_iter <- function(K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
+    .Call(`_ClusterNormal_fmm_iter`, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
 }
 
 log_alloc_prob <- function(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, restricted) {
@@ -23,14 +27,6 @@ log_alloc_prob <- function(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, 
 
 samp_new <- function(log_prob_mat) {
     .Call(`_ClusterNormal_samp_new`, log_prob_mat)
-}
-
-log_marginal <- function(y, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
-    .Call(`_ClusterNormal_log_marginal`, y, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
-}
-
-log_posterior <- function(y_new, data, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
-    .Call(`_ClusterNormal_log_posterior`, y_new, data, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
 }
 
 SFDM_allocate <- function(K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {
