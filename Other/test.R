@@ -21,20 +21,25 @@ build()
 install()
 library(ClusterNormal)
 
-### User-defined functions: ----------------------------------------------------
-rm(list = ls())
-n_unique <- function(clus_vec){
-  length(unique(clus_vec))
-}
-
 ### Sandbox: -------------------------------------------------------------------
 rm(list = ls())
 set.seed(52)
 dat <- rnorm(10, c(-5, 5))
-K_max <- 10
+K_max <- 5
+
 fmm_iter(K_max, rep(1:2, 5), dat, mu0_cluster = rep(0, K_max), 
          lambda_cluster = rep(1, K_max), a_sigma_cluster = rep(1, K_max), 
          b_sigma_cluster = rep(1, K_max))
 
+result <- fmm(100, K_max, rep(1:2, 5), dat, mu0_cluster = rep(0, K_max), 
+    lambda_cluster = rep(1, K_max), a_sigma_cluster = rep(1, K_max), 
+    b_sigma_cluster = rep(1, K_max))
 
+salso(result)
 
+rm(list = ls())
+test_vec <- rep(NA, 1000)
+for(i in 1:1000){
+  test_vec[i] <- rmultinom_1(rep(0.1, 10), 10)
+}
+table(test_vec)

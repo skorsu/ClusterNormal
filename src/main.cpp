@@ -118,15 +118,24 @@ double log_posterior(arma::vec y_new, arma::vec data, int ci,
 }
 
 // [[Rcpp::export]]
-Rcpp::IntegerVector rmultinom_1(unsigned int &size, Rcpp::NumericVector &probs, 
-                                unsigned int &N){
-  /*
+int rmultinom_1(arma::vec unnorm_prob, unsigned int N){
+  
+  /* Credit: 
    * https://gallery.rcpp.org/articles/recreating-rmultinom-and-rpois-with-rcpp/
    */
   
+  // Convert arma object to Rcpp object
+  Rcpp::NumericVector prob_rcpp = Rcpp::wrap(unnorm_prob);
+  
+  // Run a multinomial distribution random function
   Rcpp::IntegerVector outcome(N);
-  rmultinom(size, probs.begin(), N, outcome.begin());
-  return outcome;
+  rmultinom(1, prob_rcpp.begin(), N, outcome.begin());
+  
+  // Convert back to the cluster index
+  arma::vec outcome_arma = Rcpp::as<arma::vec>(Rcpp::wrap(outcome));
+  int desire_cluster = arma::index_max(outcome_arma);
+  
+  return desire_cluster;
 }
 
 // Finite Mixture Model: -------------------------------------------------------
@@ -157,8 +166,6 @@ arma::vec fmm_iter(int K, arma::vec old_assign, arma::vec y,
     // (row: clusters, column: (cluster index, log_predictive, predictive))
     arma::mat alloc_prob(K, 3, arma::fill::value(-1000));
     
-    std::cout << "---------- obs: " << i << " ----------" << std::endl;
-    
     // Loop through all possible cluster
     for(int k = 0; k < K; ++k)
     {
@@ -180,10 +187,37 @@ arma::vec fmm_iter(int K, arma::vec old_assign, arma::vec y,
     
     // Calculate the predictive probability and normalize it.
     alloc_prob.col(2) = log_sum_exp(alloc_prob.col(1));
-  
+    
+    // Sample a new cluster based on the predictive probability
+    new_assign.row(i).fill(rmultinom_1(alloc_prob.col(2), K)); 
   }
   
   return new_assign;
+}
+
+// [[Rcpp::export]]
+arma::mat fmm(int iter, int K, arma::vec old_assign, arma::vec y, 
+              arma::vec mu0_cluster, arma::vec lambda_cluster, 
+              arma::vec a_sigma_cluster, arma::vec b_sigma_cluster){
+  
+  /* Description: -
+   * Output: -
+   * Input: -
+   */
+  
+  arma::mat cluster_iter(y.size(), iter, arma::fill::value(-1));
+  arma::vec inter_assign(old_assign);
+  
+  for(int j = 0; j < iter; ++j){
+    
+    inter_assign = fmm_iter(K, inter_assign, y, mu0_cluster, 
+                            lambda_cluster, a_sigma_cluster, b_sigma_cluster);
+    cluster_iter.col(j) = inter_assign;
+    
+  }
+  
+  return cluster_iter.t();
+  
 }
 
 // Updated Code: ---------------------------------------------------------------
