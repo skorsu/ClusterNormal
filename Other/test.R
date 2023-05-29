@@ -22,20 +22,33 @@ install()
 library(ClusterNormal)
 
 ### Sandbox: -------------------------------------------------------------------
+
 rm(list = ls())
+K_m <- 5
 set.seed(52)
-dat <- rnorm(10, c(-5, 5))
+ci_true <- sample(0:(K_m-1), 500, replace = TRUE)
+dat <- rnorm(500, seq(-100, 100, length.out = K_m)[(ci_true + 1)])
+hist(scale(dat), breaks = 100)
 K_max <- 5
 
-fmm_iter(K_max, rep(1:2, 5), dat, mu0_cluster = rep(0, K_max), 
-         lambda_cluster = rep(1, K_max), a_sigma_cluster = rep(1, K_max), 
-         b_sigma_cluster = rep(1, K_max))
+start_time <- Sys.time()
+result <- fmm(10000, K_max, rep(0:0, 500), scale(dat), mu0_cluster = rep(0, K_max), 
+    lambda_cluster = rep(1, K_max), a_sigma_cluster = rep(10, K_max), 
+    b_sigma_cluster = rep(1, K_max), xi_cluster = rep(1, K_max))
+total_time <- difftime(Sys.time(), start_time, units = "secs")
+total_time
 
-result <- fmm(100, K_max, rep(1:2, 5), dat, mu0_cluster = rep(0, K_max), 
-    lambda_cluster = rep(1, K_max), a_sigma_cluster = rep(1, K_max), 
-    b_sigma_cluster = rep(1, K_max))
+clus_assign <- salso(result[-c(1:5000), ], maxNClusters = K_max)
+table(clus_assign, ci_true)
 
-salso(result)
+quantile(scale(dat)[clus_assign == 2])
+
+data.frame(x = scale(dat)) %>%
+  arrange(x) %>%
+  mutate(previous = lag(x)) %>%
+  mutate(diff = x - previous) %>%
+  arrange(-diff) %>%
+  head(15)
 
 rm(list = ls())
 test_vec <- rep(NA, 1000)

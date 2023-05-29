@@ -1,0 +1,503 @@
+---
+title: "FMM"
+output: pdf_document
+date: "2023-05-29"
+---
+
+```{r packages, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ClusterNormal)
+library(salso)
+library(kableExtra)
+library(tidyverse)
+library(mclustcomp)
+library(gridExtra)
+library(foreach)
+library(doParallel)
+library(doRNG)
+```
+
+The source code can be found in Github under the 'debugging' branch.
+
+## User-Defined functions
+
+```{r user-defined}
+### Function: Summary Quantities "Mean (SD)".
+bal_quan <- function(num_vec, rounding = 4){
+  mean_val <- round(mean(num_vec), 4)
+  sd_val <- round(sd(num_vec), 4)
+  paste0(mean_val, " (", sd_val, ")")
+}
+
+### Function: Summary from the result
+summary_para <- function(result_list){
+  ### Collect the data
+  n_cluster_vec <- rep(NA, n_para)
+  time_vec <- rep(NA, n_para)
+  clus_quality <- matrix(NA, ncol = 3, nrow = n_para)
+  
+  for(i in 1:n_para){
+    n_cluster_vec[i] <- result_list[[i]]$n_cluster
+    time_vec[i] <- result_list[[i]]$time
+    clus_quality[i, ] <- result_model[[i]]$clus_measure[c(1, 5, 22), 2]
+  }
+  
+  data.frame(n_cluster = bal_quan(n_cluster_vec), time = bal_quan(time_vec)) %>%
+    data.frame(t(apply(clus_quality, 2, bal_quan))) %>%
+    kbl(col.names = c("# cluster", "time", "Adjusted Rand", "Jaccard", "VI"))
+  
+}
+
+### Function: Calculate mean and variance
+mean_var <- function(num_vec){
+  c(mean(num_vec), var(num_vec))
+}
+```
+
+## Overall Settings
+
+I will run the model for 5,000 iterations for all cases while using the first 2,500 iterations as a burn-in. Also, I will run the model for 10 data sets parallel for each case.
+
+```{r settings}
+iter <- 5000
+burn_in <- 2500
+overall_seed <- 31807
+n_para <- 10
+```
+
+## Part I: 2 - 4 Separated Clusters
+
+In this part, we will investigate the performance of the model when applied to the data with clearly separated clusters. I will use the model for the data with 2, 3, and 4 separated clusters. The plots below show the standardized data for each case. Also, I have initialized that all observations are in the same cluster.
+
+```{r plot, echo=FALSE}
+set.seed(overall_seed)
+ci_true <- sample(1:2, 500, replace = TRUE)
+dat <- rnorm(500, c(-5, 5)[ci_true])
+p1 <- ggplot(data.frame(x = scale(dat), group = ci_true), aes(x = x)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 50, alpha = 0.25) +
+  geom_density(linewidth = 0.75) +
+  theme_bw() +
+  labs(title = "2 separated clusters (Scaled Data)", x = "Data", y = "Density")
+
+ci_true <- sample(1:3, 500, replace = TRUE)
+dat <- rnorm(500, c(-10, 0, 10)[ci_true])
+p2 <- ggplot(data.frame(x = scale(dat), group = ci_true), aes(x = x)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 50, alpha = 0.25) +
+  geom_density(linewidth = 0.75) +
+  theme_bw() +
+  labs(title = "3 separated clusters (Scaled Data)", x = "Data", y = "Density")
+
+ci_true <- sample(1:4, 500, replace = TRUE)
+dat <- rnorm(500, c(-15, -5, 5, 15)[ci_true])
+p3 <- ggplot(data.frame(x = scale(dat), group = ci_true), aes(x = x)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 50, alpha = 0.25) +
+  geom_density(linewidth = 0.75) +
+  theme_bw() +
+  labs(title = "4 separated clusters (Scaled Data)", x = "Data", y = "Density")
+
+grid.arrange(p1, p2, p3)
+```
+
+Note that the hyperparameter for all cases are $\mu = 0, \lambda = a_\sigma = b_\sigma = 1, \xi = 0.1$. Besides, I have set $K_{\text{max}} = 5$ (Default Case).
+
+```{r separated_2_clusters, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:2, 500, replace = TRUE)
+  dat <- rnorm(500, c(-5, 5)[ci_true])
+  
+  ### Run the model
+  K_max <- 5
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+Result for the two separated clusters.
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+```{r separated_3_clusters, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:3, 500, replace = TRUE)
+  dat <- rnorm(500, c(-10, 0, 10)[ci_true])
+  
+  ### Run the model
+  K_max <- 5
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+Result for the three separated clusters.
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+```{r separated_4_clusters, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:4, 500, replace = TRUE)
+  dat <- rnorm(500, c(-15, -5, 5, 15)[ci_true])
+  
+  ### Run the model
+  K_max <- 5
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+Result for the four separated clusters.
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+### Comment
+
+The model works well with the set of default hyperparameters in these case.
+
+## Part II: 5 Separated Clusters
+
+Below is the plot for the standardized data for five separated clusters. I will change the value for $K_{\text{max}}$ and $a_{\sigma}$ for each setting. The other parameters still be the same as the previous part. ($\mu = 0, \lambda = b_\sigma = 1, \xi = 0.1$)
+
+```{r, echo=FALSE}
+set.seed(overall_seed)
+ci_true <- sample(1:5, 500, replace = TRUE)
+dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
+p1 <- ggplot(data.frame(x = scale(dat), group = ci_true), aes(x = x)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 50, alpha = 0.25) +
+  geom_density(linewidth = 0.75) +
+  theme_bw() +
+  labs(title = "5 separated clusters (Scaled Data)", x = "Data", y = "Density")
+p1
+```
+
+For this case, I have set $K_{\text{max}} = 5$, which is the same as the truth while letting $a_{\sigma}$ equals 1. I have initialized that all observations are in the same cluster. The result looks perfect here.
+
+```{r separated_5_clusters_a, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:5, 500, replace = TRUE)
+  dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
+  
+  ### Run the model
+  K_max <- 5
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(10, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+```{r separated_5_clusters_b, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:5, 500, replace = TRUE)
+  dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
+  
+  ### Run the model
+  K_max <- 10
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+Then, I have changed $K_{\text{max}}$ to 10 instead while keeping $a_{\sigma}$ equals 1 (same as before). I have initialized that all observations are in the same cluster. (also, same as before) It turns out that the model can detect that we have only 2 to 3 clusters instead. The run time also increases because the model have to go through every possible cluster (which is 10 in this case, but it was 5 previously.)
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+```{r separated_5_clusters_c, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:5, 500, replace = TRUE)
+  dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
+  
+  ### Run the model
+  K_max <- 10
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, ci_true, scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+The result below is $K_{\text{max}}$ to 10 and $a_{\sigma}$ equals 1 (same as before). However, I let the model cheated by initilizing the observation by using the correct cluster assignment. The result works better, but it is still bad.
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+```{r separated_5_clusters_d, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:5, 500, replace = TRUE)
+  dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
+  
+  ### Run the model
+  K_max <- 10
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(10, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+However, when I changed $a_{\sigma}$ to 10, while still let $K_{\text{max}}$ to 10 (same as before). I have initialized that all observations are in the same cluster. The result looks perfect here.
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+### Comment
+
+By increasing the value of $a_{\sigma}$, we are using a stronger prior belief that the variances of the components are small, which leads to more concentrated and compact clusters, making it less likely for the model to assign observations to separate components and preferring a smaller number of active clusters.
+
+$$
+E\left[\sigma^{2}_{k}\right] = \frac{b_{\sigma}}{(a_{\sigma} - 1)} \\
+Var\left[\sigma^{2}_{k}\right] = \frac{b_{\sigma}^{2}}{(a_{\sigma} - 2)(a_{\sigma} - 1)^{2}}
+$$
+In other words, I think this can be acted as one type of regularization, preventing the model from creating a new cluster unless there is strong evidence to support it. 
+
+Also, I think that increasing $a_{\sigma}$ will have an effect on the posterior distribution. By setting a larger value for $a_{\sigma}$, the prior belief becomes more influential in determining the posterior distribution, leading to a bias towards smaller variances and more concentrated clusters.
+
+## Part III: 3 Mixing clusters
+
+Below is the plot for the standardized data for three mixing clusters. I will change the value for $\lambda$ while I keep the other parameters still be fixed. ($\mu = 0, a_\sigma = b_\sigma = 1, \xi = 0.1$)
+
+```{r plot_mixing, echo=FALSE}
+set.seed(overall_seed)
+ci_true <- sample(1:3, 500, replace = TRUE)
+dat <- rnorm(500, c(-10, 0, 10)[ci_true], 3)
+p2 <- ggplot(data.frame(x = scale(dat), group = ci_true), aes(x = x)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 50, alpha = 0.25) +
+  geom_density(linewidth = 0.75) +
+  theme_bw() +
+  labs(title = "3 clusters (Scaled Data)", x = "Data", y = "Density")
+p2
+```
+
+```{r mixing_3_clusters_a, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:3, 500, replace = TRUE)
+  dat <- rnorm(500, c(-10, 0, 10)[ci_true], 3)
+  
+  ### Run the model
+  K_max <- 5
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+This is the result when $\lambda = 1$ (Default Case)
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+```{r mixing_3_clusters_b, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:3, 500, replace = TRUE)
+  dat <- rnorm(500, c(-10, 0, 10)[ci_true], 3)
+  
+  ### Run the model
+  K_max <- 5
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(0.1, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+This is the result when $\lambda = 0.1$ (lowering $\lambda$)
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+```{r mixing_3_clusters_c, echo=FALSE}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:3, 500, replace = TRUE)
+  dat <- rnorm(500, c(-10, 0, 10)[ci_true], 3)
+  
+  ### Run the model
+  K_max <- 5
+  start_time <- Sys.time()
+  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+                mu0_cluster = rep(0, K_max), lambda_cluster = rep(10, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                xi_cluster = rep(1, K_max))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- as.numeric(salso(result[-c(1:burn_in), ], maxNClusters = K_max))
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+This is the result when $\lambda = 10$ (increasing $\lambda$)
+
+```{r, echo=FALSE}
+summary_para(result_model)
+```
+
+### Comment
+
+We might notice that when the $\lambda = 0.1$, the result looks better that the default case, while $\lambda = 10$ provides the worst result among these three cases. Based on our model, $\lambda$ controls the precision of the prior belief about the mean of the components. When $\lambda$ is small, it implies a weaker prior belief in tightly concentrated means, allowing for more variability in the positioning of the cluster centers. Therefore, the model is more likely to assign data points to overlapping or mixed clusters.

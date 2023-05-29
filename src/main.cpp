@@ -106,6 +106,12 @@ double log_posterior(arma::vec y_new, arma::vec data, int ci,
    *        (mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
    */
   
+  // Hyperparameter for the corresponding cluster
+  double mu0 = mu0_cluster[ci];
+  double lb = lambda_cluster[ci];
+  double as = a_sigma_cluster[ci];
+  double bs = b_sigma_cluster[ci];
+  
   double result = 0.0;
   double log_numer = log_marginal(arma::join_cols(y_new, data), ci, mu0_cluster, 
                                   lambda_cluster, a_sigma_cluster, 
@@ -140,17 +146,18 @@ int rmultinom_1(arma::vec unnorm_prob, unsigned int N){
 
 // Finite Mixture Model: -------------------------------------------------------
 // [[Rcpp::export]]
-arma::vec fmm_iter(int K, arma::vec old_assign, arma::vec y, 
-                   arma::vec mu0_cluster, arma::vec lambda_cluster, 
-                   arma::vec a_sigma_cluster, arma::vec b_sigma_cluster){
-  
+arma::vec fmm_iter(int K, arma::vec old_assign, arma::vec y,
+                   arma::vec mu0_cluster, arma::vec lambda_cluster,
+                   arma::vec a_sigma_cluster, arma::vec b_sigma_cluster,
+                   arma::vec xi_cluster){
+
   /* Description: -
    * Output: -
    * Input: -
    */
-  
+
   arma::vec new_assign(old_assign);
-  
+
   // Loop through the observations
   for(int i = 0; i < y.size(); ++i){
     
@@ -161,11 +168,11 @@ arma::vec fmm_iter(int K, arma::vec old_assign, arma::vec y,
     arma::vec assign_not_i(new_assign);
     y_not_i.shed_row(i);
     assign_not_i.shed_row(i);
-    
+
     // Create a matrix for collecting the allocation probability
     // (row: clusters, column: (cluster index, log_predictive, predictive))
     arma::mat alloc_prob(K, 3, arma::fill::value(-1000));
-    
+
     // Loop through all possible cluster
     for(int k = 0; k < K; ++k)
     {
@@ -173,51 +180,56 @@ arma::vec fmm_iter(int K, arma::vec old_assign, arma::vec y,
       arma::uvec obs_index = arma::find(assign_not_i == k);
       double log_pred = 0.0;
       if(obs_index.size() == 0){
-        // If there are no observations in that cluster, the predictive is just 
+        // If there are no observations in that cluster, the predictive is just
         // a marginal distribution.
-        log_pred = log_marginal(y_current, k, mu0_cluster, lambda_cluster, 
+        log_pred += log_marginal(y_current, k, mu0_cluster, lambda_cluster,
                                 a_sigma_cluster, b_sigma_cluster);
       } else {
-        log_pred = log_posterior(y_current, y_not_i.rows(obs_index), k, 
-                                 mu0_cluster, lambda_cluster, a_sigma_cluster, 
+        log_pred += log_posterior(y_current, y_not_i.rows(obs_index), k,
+                                 mu0_cluster, lambda_cluster, a_sigma_cluster,
                                  b_sigma_cluster);
       }
+
+      log_pred += std::log(obs_index.size() + xi_cluster[k]);
       alloc_prob.col(1).row(k).fill(log_pred);
     }
-    
+
     // Calculate the predictive probability and normalize it.
     alloc_prob.col(2) = log_sum_exp(alloc_prob.col(1));
-    
+
     // Sample a new cluster based on the predictive probability
-    new_assign.row(i).fill(rmultinom_1(alloc_prob.col(2), K)); 
+    int index_new_cluster = rmultinom_1(alloc_prob.col(2), K);
+    new_assign.row(i).fill(alloc_prob.col(0)[index_new_cluster]);
   }
-  
+
   return new_assign;
 }
 
 // [[Rcpp::export]]
-arma::mat fmm(int iter, int K, arma::vec old_assign, arma::vec y, 
-              arma::vec mu0_cluster, arma::vec lambda_cluster, 
-              arma::vec a_sigma_cluster, arma::vec b_sigma_cluster){
-  
+arma::mat fmm(int iter, int K, arma::vec old_assign, arma::vec y,
+              arma::vec mu0_cluster, arma::vec lambda_cluster,
+              arma::vec a_sigma_cluster, arma::vec b_sigma_cluster,
+              arma::vec xi_cluster){
+
   /* Description: -
    * Output: -
    * Input: -
    */
-  
+
   arma::mat cluster_iter(y.size(), iter, arma::fill::value(-1));
   arma::vec inter_assign(old_assign);
-  
+
   for(int j = 0; j < iter; ++j){
-    
-    inter_assign = fmm_iter(K, inter_assign, y, mu0_cluster, 
-                            lambda_cluster, a_sigma_cluster, b_sigma_cluster);
-    cluster_iter.col(j) = inter_assign;
-    
+
+    cluster_iter.col(j) = fmm_iter(K, inter_assign, y, mu0_cluster,
+                     lambda_cluster, a_sigma_cluster, b_sigma_cluster,
+                     xi_cluster);
+    inter_assign = cluster_iter.col(j);
+
   }
-  
+
   return cluster_iter.t();
-  
+
 }
 
 // Updated Code: ---------------------------------------------------------------

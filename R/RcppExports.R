@@ -17,12 +17,12 @@ rmultinom_1 <- function(unnorm_prob, N) {
     .Call(`_ClusterNormal_rmultinom_1`, unnorm_prob, N)
 }
 
-fmm_iter <- function(K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
-    .Call(`_ClusterNormal_fmm_iter`, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
+fmm_iter <- function(K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster) {
+    .Call(`_ClusterNormal_fmm_iter`, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster)
 }
 
-fmm <- function(iter, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
-    .Call(`_ClusterNormal_fmm`, iter, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
+fmm <- function(iter, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster) {
+    .Call(`_ClusterNormal_fmm`, iter, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster)
 }
 
 log_alloc_prob <- function(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, restricted) {
