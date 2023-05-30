@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-        "file_last_write": 1685129544.0,
+        "file_last_write": 1685460222.0,
         "definitions": [
             {
                 "usr": "c:@F@log_sum_exp#$@N@arma@S@Col>#d#",
@@ -44,22 +44,32 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@rmultinom_1#&i#&$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#",
+                "usr": "c:@F@rmultinom_1#$@N@arma@S@Col>#d#i#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "rmultinom_1(unsigned int &, Rcpp::NumericVector &, unsigned int &)",
+                "name": "rmultinom_1(arma::vec, unsigned int)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 121,
-                "column": 21,
+                "line": 127,
+                "column": 5,
                 "hidden": false
             },
             {
-                "usr": "c:@F@fmm_iter#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#",
+                "usr": "c:@F@fmm_iter#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "fmm_iter(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "name": "fmm_iter(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 134,
+                "line": 149,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@fmm#I#I#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "fmm(int, int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
+                "line": 209,
                 "column": 11,
                 "hidden": false
             },
@@ -69,7 +79,7 @@
                 "parent_name": "",
                 "name": "log_alloc_prob(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, bool)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 191,
+                "line": 237,
                 "column": 11,
                 "hidden": false
             },
@@ -79,7 +89,7 @@
                 "parent_name": "",
                 "name": "samp_new(arma::mat)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 259,
+                "line": 305,
                 "column": 5,
                 "hidden": false
             },
@@ -89,7 +99,7 @@
                 "parent_name": "",
                 "name": "SFDM_allocate(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 288,
+                "line": 334,
                 "column": 12,
                 "hidden": false
             },
@@ -99,7 +109,7 @@
                 "parent_name": "",
                 "name": "SFDM_SM(int, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, double, int)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 331,
+                "line": 377,
                 "column": 12,
                 "hidden": false
             },
@@ -109,7 +119,7 @@
                 "parent_name": "",
                 "name": "SFDM_alpha(arma::vec, arma::vec, arma::vec, double)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 399,
+                "line": 445,
                 "column": 12,
                 "hidden": false
             }

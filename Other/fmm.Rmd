@@ -11,7 +11,7 @@ library(salso)
 library(kableExtra)
 library(tidyverse)
 library(mclustcomp)
-library(EMCluster)
+library(mixtools)
 library(PReMiuM)
 library(gridExtra)
 library(foreach)
@@ -74,16 +74,47 @@ set.seed(overall_seed)
 ci_true <- sample(1:5, 500, replace = TRUE)
 dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
 
-DP_output_prefix <- paste0("DP_", overall_seed)
-
-em_option <- .EMControl(short.iter = 1) ### Option for the EM algorithm
-init.EM(scale(dat), nclass = 10, lab = NULL, EMC = em_option,
-        stable.solution = TRUE, min.n = NULL, min.n.iter = 10,
-        method = c("Rnd.EM"))
-emgroup(scale(dat), nclass = 5, EMC = em_option)
-
+k <- 5
+mu_init <- rep(0, k)
+sigma_init <- sqrt(1/rgamma(k, 1, 1))
+EM_alg <- normalmixEM(scale(dat), mu = mu_init, sigma = sigma_init, maxit = 5000)
+EM_result <-t(apply(EM_alg$posterior, 1, rmultinom, n = 1, size = 1))
+table(apply(EM_result, 1, which.max), ci_true)
 ```
 
+```{r}
+set.seed(overall_seed)
+registerDoParallel(detectCores() - 1)
+overall_start <- Sys.time()
+result_model <- foreach(i = 1:n_para) %dorng%{
+  
+  ### Data Simulation
+  ci_true <- sample(1:2, 500, replace = TRUE)
+  dat <- rnorm(500, c(-5, 5)[ci_true])
+  
+  ### Run the model
+  K_max <- 5
+  start_time <- Sys.time()
+  mu_init <- rep(0, K_max)
+  sigma_init <- sqrt(1/rgamma(K_max, 1, 1))
+  EM_alg <- normalmixEM(scale(dat), mu = mu_init, sigma = sigma_init, maxit = 5000)
+  EM_result <-t(apply(EM_alg$posterior, 1, rmultinom, n = 1, size = 1))
+  total_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  clus_assign <- apply(EM_result, 1, which.max)
+
+  return(list(time = as.numeric(total_time), 
+              clus_assign = clus_assign, ci_true = ci_true,
+              n_cluster = length(unique(clus_assign)), 
+              clus_measure = mclustcomp(clus_assign, ci_true)))
+}
+stopImplicitCluster()
+```
+
+```{r, echo=FALSE}
+## Result for the two separated clusters.
+summary_para(result_model)
+```
 
 ```{r, echo=FALSE, eval=FALSE, include=FALSE}
 ## Part I: 2 - 4 Separated Clusters
@@ -124,6 +155,7 @@ grid.arrange(p1, p2, p3)
 ## Note that the hyperparameter for all cases are $\mu = 0, \lambda = a_\sigma = b_\sigma = 1, \xi = 0.1$. Besides, I have set $K_{\text{max}} = 5$ (Default Case).
 ```
 
+
 ```{r separated_2_clusters, echo=FALSE, eval=FALSE, include=FALSE}
 set.seed(overall_seed)
 registerDoParallel(detectCores() - 1)
@@ -131,13 +163,13 @@ overall_start <- Sys.time()
 result_model <- foreach(i = 1:n_para) %dorng%{
   
   ### Data Simulation
-  ci_true <- sample(1:2, 500, replace = TRUE)
-  dat <- rnorm(500, c(-5, 5)[ci_true])
+  ci_true <- rep(1:2, 100)
+  dat <- rnorm(200, c(-5, 5)[ci_true])
   
   ### Run the model
-  K_max <- 5
+  K_max <- 10
   start_time <- Sys.time()
-  result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
+  result <- fmm(iter, K_max, rep(0:0, 200), scale(dat), 
                 mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
                 a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
                 xi_cluster = rep(1, K_max))
@@ -158,6 +190,21 @@ stopImplicitCluster()
 ## Result for the two separated clusters.
 summary_para(result_model)
 ```
+
+```{r}
+ci_true <- rep(1:2, 100)
+dat <- rnorm(200, c(-5, 5)[ci_true])
+data.frame(x = ci_true, y = scale(dat))  %>%
+  group_by(x) %>%
+  summarise(mean = mean(y), var = var(y))
+
+data.frame(x = ci_true, y = scale(dat))  %>%
+  group_by(x) %>%
+  summarise(mean = mean(y), var = var(y)) %>%
+  .$mean %>%
+  var
+```
+
 
 ```{r separated_3_clusters, echo=FALSE, eval=FALSE, include=FALSE}
 set.seed(overall_seed)
@@ -202,11 +249,11 @@ overall_start <- Sys.time()
 result_model <- foreach(i = 1:n_para) %dorng%{
   
   ### Data Simulation
-  ci_true <- sample(1:4, 500, replace = TRUE)
-  dat <- rnorm(500, c(-15, -5, 5, 15)[ci_true])
+  ci_true <- sample(1:5, 500, replace = TRUE)
+  dat <- rnorm(500, c(-15, -5, 5, 15, 25)[ci_true], (0.1)^2)
   
   ### Run the model
-  K_max <- 5
+  K_max <- 10
   start_time <- Sys.time()
   result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
                 mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
@@ -228,6 +275,23 @@ stopImplicitCluster()
 ## Result for the four separated clusters.
 summary_para(result_model)
 ```
+
+```{r}
+ci_true <- sample(1:5, 500, replace = TRUE)
+dat <- rnorm(500, c(-15, -5, 5, 15, 25)[ci_true])
+data.frame(x = ci_true, y = scale(dat)) %>%
+  group_by(x) %>%
+  summarise(mean = mean(y), var = var(y)) %>%
+  .$mean %>% var
+
+ci_true <- sample(1:4, 500, replace = TRUE)
+dat <- rnorm(500, c(-15, -5, 5, 15)[ci_true])
+data.frame(x = ci_true, y = scale(dat)) %>%
+  group_by(x) %>%
+  summarise(mean = mean(y), var = var(y)) %>%
+  .$mean %>% var
+```
+
 
 ```{r, echo=FALSE, eval=FALSE, include=FALSE}
 ### Comment
@@ -264,11 +328,11 @@ result_model <- foreach(i = 1:n_para) %dorng%{
   dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
   
   ### Run the model
-  K_max <- 10
+  K_max <- 5
   start_time <- Sys.time()
   result <- fmm(iter, K_max, rep(0:0, 500), scale(dat), 
                 mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
-                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max),
                 xi_cluster = rep(1, K_max))
   total_time <- difftime(Sys.time(), start_time, units = "secs")
   
@@ -280,7 +344,34 @@ result_model <- foreach(i = 1:n_para) %dorng%{
               clus_measure = mclustcomp(clus_assign, ci_true)))
 }
 stopImplicitCluster()
+
+summary_para(result_model)
 ```
+
+
+
+
+```{r}
+ci_true <- sample(1:5, 500, replace = TRUE)
+dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
+
+mean(dat)
+var(dat)
+
+mean(scale(dat))
+var(scale(dat))
+
+data.frame(x = ci_true, y = scale(dat))  %>%
+  group_by(x) %>%
+  summarise(mean = mean(y), var = var(y))
+
+data.frame(x = ci_true, y = dat)  %>%
+  group_by(x) %>%
+  summarise(mean = mean(y), var = var(y))
+```
+
+
+$\xi = 1$
 
 ```{r, echo=FALSE}
 summary_para(result_model)
@@ -315,6 +406,8 @@ result_model <- foreach(i = 1:n_para) %dorng%{
 stopImplicitCluster()
 ```
 
+$\xi = 0.1$
+
 ```{r, echo=FALSE}
 summary_para(result_model)
 ```
@@ -348,6 +441,8 @@ result_model <- foreach(i = 1:n_para) %dorng%{
 stopImplicitCluster()
 ```
 
+$\xi = 0.01$
+
 ```{r, echo=FALSE}
 summary_para(result_model)
 ```
@@ -380,6 +475,8 @@ result_model <- foreach(i = 1:n_para) %dorng%{
 }
 stopImplicitCluster()
 ```
+
+$\xi = 0.001$
 
 ```{r, echo=FALSE}
 summary_para(result_model)
