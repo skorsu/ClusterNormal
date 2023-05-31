@@ -232,6 +232,369 @@ arma::mat fmm(int iter, int K, arma::vec old_assign, arma::vec y,
 
 }
 
+// Function for SFDM: ----------------------------------------------------------
+// [[Rcpp::export]]
+arma::vec adjust_alpha(arma::vec cluster_assign, arma::vec old_alpha){
+  
+  /* Description: This function will adjust the alpha vector. This function 
+   *              should be used within the reallocation and split-merge step.
+   * Output: The vector of adjusted alpha. If there is no observation in that 
+   *         cluster, we consider it as non-active. The corresponding alpha must
+   *         be 0.
+   * Input: -
+   */
+  
+  arma::vec new_alpha(old_alpha.size(), arma::fill::value(0.0));
+  
+  arma::uvec active_clus = arma::conv_to<arma::uvec>::from(arma::unique(cluster_assign));
+  new_alpha.rows(active_clus) = old_alpha.rows(active_clus);
+  
+  return new_alpha;
+}
+
+// [[Rcpp::export]]
+arma::vec split_launch(arma::vec old_assign, arma::vec y, arma::vec mu0_cluster, 
+                       arma::vec lambda_cluster, arma::vec a_sigma_cluster, 
+                       arma::vec b_sigma_cluster, arma::vec sm_cluster, 
+                       arma::uvec S_index){
+  
+  /* Description: This function will perform a single launch step. This function
+   *              will be used in the split-merge procedure.
+   * Output: The vector of new cluster assignment after performing one iteration
+   *         of launch step.
+   * Input: -
+   */
+  
+  arma::vec new_assign(old_assign);
+  
+  // Loop through the observations in the S
+  for(int i = 0; i < S_index.size(); ++i){
+    
+    int j = S_index[i];
+    
+    // Select y_current (as a y_new)
+    arma::vec y_current = y.row(j);
+    // Create vector for y_not_i and cluster_not_i
+    arma::vec y_not_i(y);
+    arma::vec assign_not_i(new_assign);
+    y_not_i.shed_row(j);
+    assign_not_i.shed_row(j);
+    
+    // Create a matrix for collecting the allocation probability
+    // (row: clusters, column: (cluster index, log_predictive, predictive))
+    arma::mat alloc_prob(2, 3, arma::fill::value(-1000));
+    
+    // Loop through all possible cluster
+    for(int k = 0; k < 2; ++k)
+    {
+      int cc = sm_cluster[k];
+      alloc_prob.col(0).row(k).fill(cc);
+      arma::uvec obs_index = arma::find(assign_not_i == cc);
+      
+      double nk = obs_index.size();
+      double log_pred = 0.0;
+      
+      if(nk == 0){
+        // If there are no observations in that cluster, the predictive is just
+        // a marginal distribution.
+        log_pred += log_marginal(y_current, cc, mu0_cluster, lambda_cluster,
+                                 a_sigma_cluster, b_sigma_cluster);
+        } else {
+        log_pred += log_posterior(y_current, y_not_i.rows(obs_index), cc,
+                                  mu0_cluster, lambda_cluster, a_sigma_cluster,
+                                  b_sigma_cluster);
+      }
+    
+      log_pred += std::log(nk);
+      alloc_prob.col(1).row(k).fill(log_pred);
+    }
+  
+    // Calculate the predictive probability and normalize it.
+    alloc_prob.col(2) = log_sum_exp(alloc_prob.col(1));
+    
+    // Sample a new cluster based on the predictive probability
+    int index_new_cluster = rmultinom_1(alloc_prob.col(2), 2);
+    new_assign.row(j).fill(alloc_prob.col(0)[index_new_cluster]);
+  }
+  
+  return new_assign;
+}
+
+// [[Rcpp::export]]
+double log_proposal(arma::vec c1, arma::vec c2, arma::vec y, 
+                    arma::vec xi_cluster, arma::vec mu0_cluster, 
+                    arma::vec lambda_cluster, arma::vec a_sigma_cluster, 
+                    arma::vec b_sigma_cluster, arma::vec sm_cluster, 
+                    arma::uvec S_index){
+  
+  /* Description: This will calculate the proposal probability in the log scale.
+   *              Based on the SM paper, we will consider only the observations
+   *              which are in S.
+   * Output: log proposal probability, log(q(c1|c2)).
+   * Input: Two lists of the cluster assignment (c1, c2), the set of the
+   *        observation that we are interested in SM procedure (S), the list of
+   *        interested cluster (s_clus), data (y), cluster concentration (xi),
+   *        data hyperparameters (a_sigma, b_sigma, lambda, mu0)
+   */
+
+  double result = 0.0;
+  arma::vec inter_assign(c2);
+  
+  // Loop through the observations in the S
+  for(int i = 0; i < S_index.size(); ++i){
+    
+    int j = S_index[i];
+    
+    // Select y_current (as a y_new)
+    arma::vec y_current = y.row(j);
+    // Create vector for y_not_i and cluster_not_i
+    arma::vec y_not_i(y);
+    arma::vec assign_not_i(inter_assign);
+    y_not_i.shed_row(j);
+    assign_not_i.shed_row(j);
+    
+    // Create a matrix for collecting the allocation probability
+    // (row: clusters, column: (cluster index, log_predictive, predictive))
+    arma::mat alloc_prob(2, 3, arma::fill::value(-1000));
+    
+    // Loop through all possible cluster
+    for(int k = 0; k < 2; ++k){
+      int cc = sm_cluster[k];
+      alloc_prob.col(0).row(k).fill(cc);
+      arma::uvec obs_index = arma::find(assign_not_i == cc);
+      
+      double nk = obs_index.size();
+      double log_pred = 0.0;
+      
+      if(nk == 0){
+        // If there are no observations in that cluster, the predictive is just
+        // a marginal distribution.
+        
+        log_pred += log_marginal(y_current, cc, mu0_cluster, lambda_cluster, 
+                                 a_sigma_cluster, b_sigma_cluster);
+        } else {
+        
+        log_pred += log_posterior(y_current, y_not_i.rows(obs_index), cc,
+                                  mu0_cluster, lambda_cluster, a_sigma_cluster,
+                                  b_sigma_cluster);
+     }
+     
+     log_pred += std::log(nk);
+     alloc_prob.col(1).row(k).fill(log_pred);
+   }
+   
+   // Calculate the predictive probability and normalize it.
+   alloc_prob.col(2) = log_sum_exp(alloc_prob.col(1));
+   
+   // Calculate the log proposal for this observation
+   arma::uvec c1_cc = arma::find(alloc_prob.col(0) == c1[j]);
+   arma::vec prob_c = alloc_prob.submat(c1_cc, arma::uvec(1, arma::fill::value(2)));
+   result += std::log(prob_c[0]);
+   
+   // Replace the current observation with cluster assignment in c1
+   inter_assign.row(j).fill(c1[j]);
+ }
+  
+  return result;
+}
+
+// [[Rcpp::export]]
+Rcpp::List SFDM_realloc(arma::vec old_assign, arma::vec y, arma::vec alpha_vec,
+                        arma::vec mu0_cluster, arma::vec lambda_cluster, 
+                        arma::vec a_sigma_cluster, arma::vec b_sigma_cluster, 
+                        arma::vec xi_cluster){
+  
+  /* Description: This function will perform the reallocation step in SFDM. This
+   *              is a first step of sparse finite discrete mixture model (SFDM). 
+   * Output: The vector of new cluster assignment after performing reallocation 
+   *         step and alpha vector.
+   * Input: -
+   */
+  
+  Rcpp::List result_realloc;
+  
+  arma::vec new_assign(old_assign);
+  arma::vec active_cluster = arma::unique(old_assign);
+  int K_pos = active_cluster.size();
+  
+  // Loop through the observations
+  for(int i = 0; i < y.size(); ++i){
+    
+    // Select y_current (as a y_new)
+    arma::vec y_current = y.row(i);
+    // Create vector for y_not_i and cluster_not_i
+    arma::vec y_not_i(y);
+    arma::vec assign_not_i(new_assign);
+    y_not_i.shed_row(i);
+    assign_not_i.shed_row(i);
+    
+    // Create a matrix for collecting the allocation probability
+    // (row: clusters, column: (cluster index, log_predictive, predictive))
+    arma::mat alloc_prob(K_pos, 3, arma::fill::value(-1000));
+    
+    // Loop through all possible cluster
+    for(int k = 0; k < K_pos; ++k)
+    {
+      int cc = active_cluster[k];
+      
+      alloc_prob.col(0).row(k).fill(cc);
+      arma::uvec obs_index = arma::find(assign_not_i == cc);
+      
+      double nk = obs_index.size();
+      double log_pred = 0.0;
+      
+      if(nk == 0){
+        // If there are no observations in that cluster, the predictive is just
+        // a marginal distribution.
+        log_pred += log_marginal(y_current, cc, mu0_cluster, lambda_cluster,
+                                 a_sigma_cluster, b_sigma_cluster);
+      } else {
+        log_pred += log_posterior(y_current, y_not_i.rows(obs_index), cc,
+                                  mu0_cluster, lambda_cluster, a_sigma_cluster,
+                                  b_sigma_cluster);
+      }
+      
+      log_pred += std::log(nk + xi_cluster[cc]);
+      alloc_prob.col(1).row(k).fill(log_pred);
+    }
+
+    // Calculate the predictive probability and normalize it.
+    alloc_prob.col(2) = log_sum_exp(alloc_prob.col(1));
+
+    // Sample a new cluster based on the predictive probability
+    int index_new_cluster = rmultinom_1(alloc_prob.col(2), K_pos);
+    new_assign.row(i).fill(alloc_prob.col(0)[index_new_cluster]);
+  }
+  
+  // Adjusted the alpha vector
+  arma::vec new_alpha = adjust_alpha(new_assign, alpha_vec); 
+  
+  // Record the result
+  result_realloc["new_assign"] = new_assign;
+  result_realloc["new_alpha"] = new_alpha;
+  return result_realloc;
+  
+}
+
+// [[Rcpp::export]]
+Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec y, arma::vec alpha_vec,
+                   arma::vec mu0_cluster, arma::vec lambda_cluster, 
+                   arma::vec a_sigma_cluster, arma::vec b_sigma_cluster, 
+                   arma::vec xi_cluster, int launch_iter, double a_theta, 
+                   double b_theta){
+  
+  /* Description: -
+   * Output: -
+   * Input: -
+   */
+  
+  Rcpp::List sm_result;
+  
+  // (0) Prepare for the algorithm
+  int n = old_assign.size(); // Number of the observations
+  arma::vec active_clus = arma::unique(old_assign);
+  int K_active = active_clus.size();
+  int split_ind = -1; // Indicate that we will perform split or merge
+  arma::vec launch_assign(old_assign); // Assignment from the launch step
+  arma::vec launch_alpha(alpha_vec); // Alpha from the launch step
+  int accept_proposed = 0; // Indicator for accepting the proposed assignment.
+  double log_A = 0.0; // log of acceptance probability
+  
+  // (1) Select two observations to determine whether we will split or merge
+  arma::uvec samp_obs = arma::randperm(n, 2); // Select two observations
+  // If all cluster is already active, we can perform only merge.
+  while((K_active == K) and (old_assign[samp_obs[0]] == old_assign[samp_obs[1]])){
+    samp_obs = arma::randperm(n, 2); // sample two observations again until we get merge.
+  }
+  arma::vec samp_clus = old_assign.rows(samp_obs);
+  int new_clus = -1;
+  // Create the split indicator. If we split, split_ind = 1. Otherwise, split_ind = 0.
+  if(samp_clus[0] == samp_clus[1]){
+    split_ind = 1; // Split
+    
+    arma::uvec inactive_index = arma::find(alpha_vec == 0);
+    arma::uvec new_clus_index = arma::randperm(inactive_index.size(), 1);
+    new_clus = inactive_index[new_clus_index[0]]; // new active cluster
+    samp_clus.row(0).fill(new_clus);
+    launch_assign.row(samp_obs[0]).fill(new_clus); // set ci_launch to be a new cluster
+    launch_alpha.row(new_clus).fill(R::rgamma(xi_cluster[new_clus], 1.0));
+  } else {
+    split_ind = 0;
+  }
+
+  // (2) Create a set S := {same cluster as samp_obs, but not index_samp}
+  arma::uvec S = arma::find(old_assign == old_assign[samp_obs[0]] or old_assign == old_assign[samp_obs[1]]);
+  arma::uvec samp_obs_index = arma::find(S == samp_obs[0] or S == samp_obs[1]);
+  S.shed_rows(samp_obs_index);
+  
+  // (3) Perform a launch step
+  // Randomly assign observation in S to be ci_launch or cj_launch.
+  arma::vec init_ind = arma::randu(S.size(), arma::distr_param(0, 1));
+  launch_assign.rows(S) = samp_clus.rows(arma::conv_to<arma::uvec>::from(init_ind > 0.5));
+  
+  // Perform a launch step
+  arma::vec dummy_launch(launch_assign.size(), arma::fill::value(-1));
+  for(int t = 0; t < launch_iter; ++t){
+    dummy_launch = split_launch(launch_assign, y, mu0_cluster, lambda_cluster, 
+                                a_sigma_cluster, b_sigma_cluster, samp_clus, S);
+    launch_assign = dummy_launch;
+  }
+  
+  // (4) Split-Merge
+  arma::vec proposed_assign(launch_assign);
+  arma::vec proposed_alpha(launch_alpha);
+  
+  if(split_ind == 1){
+    // Split: Perform another launch iteration
+    proposed_assign = split_launch(launch_assign, y, mu0_cluster, lambda_cluster, 
+                                   a_sigma_cluster, b_sigma_cluster, samp_clus, S);
+    log_A += (std::log(a_theta) - std::log(b_theta)); // Spike-and-slab
+    // Proposal Probability
+    log_A += log_proposal(launch_assign, proposed_assign, y, xi_cluster, 
+                          mu0_cluster, lambda_cluster, a_sigma_cluster, 
+                          b_sigma_cluster, samp_clus, S);
+    log_A -= log_proposal(proposed_assign, launch_assign, y, xi_cluster, 
+                          mu0_cluster, lambda_cluster, a_sigma_cluster, 
+                          b_sigma_cluster, samp_clus, S);
+  } else {
+    // Merge: All observations in S and {ci, cj} will be allocated to cj
+    proposed_assign.rows(S).fill(samp_clus[1]);
+    proposed_assign.rows(samp_obs).fill(samp_clus[1]);
+    log_A += (std::log(b_theta) - std::log(a_theta)); // Spike-and-slab
+    // Proposal Probability
+    log_A += log_proposal(old_assign, launch_assign, y, xi_cluster, 
+                          mu0_cluster, lambda_cluster, a_sigma_cluster, 
+                          b_sigma_cluster, samp_clus, S);
+  }
+  
+  // (5) Calculate the acceptance probability
+  double dummy_marginal = 0.0;
+  for(int i = 0; i < y.size(); ++i){
+    
+    log_A += log_marginal(y.row(i), proposed_assign[i], mu0_cluster, 
+                          lambda_cluster, a_sigma_cluster, b_sigma_cluster);
+    log_A -= log_marginal(y.row(i), old_assign[i], mu0_cluster, 
+                          lambda_cluster, a_sigma_cluster, b_sigma_cluster);
+    
+    dummy_marginal += log_marginal(y.row(i), proposed_assign[i], mu0_cluster, 
+                                   lambda_cluster, a_sigma_cluster, b_sigma_cluster);
+    dummy_marginal -= log_marginal(y.row(i), old_assign[i], mu0_cluster, 
+                                   lambda_cluster, a_sigma_cluster, b_sigma_cluster);
+  }
+  
+  
+  std::cout << "split/merge: " << split_ind << std::endl;
+  std::cout << "sample observations: " << samp_obs << std::endl;
+  std::cout << "sm cluster: " << samp_clus << std::endl;
+  std::cout << "S: " << S << std::endl;
+  std::cout << "alpha_vec" << arma::join_rows(alpha_vec, launch_alpha, proposed_alpha) << std::endl;
+  std::cout << "assignment" << arma::join_rows(old_assign, launch_assign, proposed_assign) << std::endl;
+  std::cout << "logA: " << log_A << std::endl;
+  std::cout << "dummy_marginal: " << dummy_marginal << std::endl;
+  return sm_result;
+} 
+
+
 // Updated Code: ---------------------------------------------------------------
 // [[Rcpp::export]]
 arma::mat log_alloc_prob(int i, arma::vec active_clus, arma::vec old_assign, 
@@ -370,74 +733,6 @@ Rcpp::List SFDM_allocate(int K, arma::vec old_assign, arma::vec xi, arma::vec y,
   result["new_alpha"] = new_alpha;
 
   return result;
-}
-
-// Step 2: Split-Merge: --------------------------------------------------------
-// [[Rcpp::export]]
-Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec old_alpha,
-                   arma::vec xi, arma::vec y, arma::vec mu0, arma::vec a_sigma,
-                   arma::vec b_sigma, arma::vec lambda, double a_theta,
-                   double b_theta, int launch_iter){
-
-  Rcpp::List result; 
-  
-  /* Description: This function will perform a split-merge procedure in our model.
-   * Output: The list of 4 objects: (1) vector of an updated cluster assignment
-   *         (2) vector of an updated cluster space (alpha),
-   *         (3) split-merge result (1 is split, 0 is merge.)
-   *         (4) accept result (1 is accept the split-merge, 0 is not.)
-   * Input: Maximum possible cluster (K), the previous assignment (old_assign), 
-   *        cluster concentration (xi), data (y), 
-   *        data hyperparameters (a_sigma, b_sigma, lambda, mu0),
-   *        spike-and-slab hyperparameters (a_theta, b_theta), 
-   *        number of iteration for the launch step (launch_iter)
-   */
-
-  // (0) Prepare for the algorithm
-  int n = old_assign.size(); // Number of the observations
-  arma::vec active_clus = arma::unique(old_assign);
-  int K_active = active_clus.size();
-  int split_ind = -1; // Indicate that we will perform split or merge
-  arma::vec launch_assign(old_assign); // Assignment from the launch step
-  arma::vec launch_alpha(old_alpha); // Alpha from the launch step
-  int accept_proposed = 0; // Indicator for accepting the proposed assignment.
-  double log_A = 0.0; // log of acceptance probability
-  
-  // (1) Select two observations to determine whether we will split or merge
-  arma::uvec samp_obs = arma::randperm(n, 2); // Select two observations
-  // If all cluster is already active, we can perform only merge.
-  while((K_active == K) and (old_assign[samp_obs[0]] == old_assign[samp_obs[1]])){
-    samp_obs = arma::randperm(n, 2); // sample two observations again until we get merge.
-  }
-  arma::vec samp_clus = old_assign.rows(samp_obs);
-  int new_clus = -1;
-  // Create the split indicator. If we split, split_ind = 1. Otherwise, split_ind = 0.
-  if(samp_clus[0] == samp_clus[1]){
-    split_ind = 1; // Split
-    
-    arma::uvec inactive_index = arma::find(old_alpha == 0);
-    arma::uvec new_clus_index = arma::randperm(inactive_index.size(), 1);
-    new_clus = inactive_index[new_clus_index[0]] + 1; // new active cluster
-    samp_clus.row(0).fill(new_clus);
-    launch_assign.row(samp_obs[0]).fill(new_clus); // set ci_launch to be a new cluster
-    launch_alpha.row((new_clus - 1)).fill(R::rgamma(xi[(new_clus - 1)], 1.0));
-  } else {
-    split_ind = 0;
-  }
-  
-  // (2) Create a set S := {same cluster as samp_obs, but not index_samp}
-  arma::uvec S = arma::find(old_assign == old_assign[samp_obs[0]] or old_assign == old_assign[samp_obs[1]]);
-  arma::uvec samp_obs_index = arma::find(S == samp_obs[0] or S == samp_obs[1]);
-  S.shed_rows(samp_obs_index);
-  
-  std::cout << "S: " << S << std::endl;
-  std::cout << " ------------------ " << std::endl;
-  std::cout << "samp_clus: " << samp_clus << std::endl;
-  std::cout << " ------------------ " << std::endl;
-  std::cout << "launch_alpha: " << launch_alpha << std::endl;
-  
-  return result;
-  
 }
 
 // Step 3: Update alpha: -------------------------------------------------------

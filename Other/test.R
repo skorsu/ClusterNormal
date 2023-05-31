@@ -22,23 +22,55 @@ install()
 library(ClusterNormal)
 
 ### Sandbox: -------------------------------------------------------------------
+rm(list = ls())
+set.seed(31)
+ci_true <- rep(0:3, 5)
+dat <- rnorm(20, c(-10, -5, 5, 10)[ci_true + 1])
+K <- 5
+
+SFDM_SM(K, ci_true, dat, alpha_vec = c(rgamma(4, 1, 1), 0),
+        mu0_cluster = rep(0, K), lambda_cluster = rep(1, K), 
+        a_sigma_cluster = rep(1, K), b_sigma_cluster = rep(1, K), 
+        xi_cluster = rep(1, K), launch_iter = 5, a_theta = 1, b_theta = 1)
+
+rm(list = ls())
+set.seed(402)
+alpha_vec <- rgamma(10, 3, 1)
+alpha_vec
+adjust_alpha(rep(c(0, 3, 2, 1, 6), 10), alpha_vec)
+
+rm(list = ls())
+set.seed(32)
+ci_true <- rep(0:3, 5)
+alpha_a <- c(rgamma(2, 1, 1), rep(0, 3))
+K <- 5
+dat <- rnorm(20, c(-10, -5, 5, 10)[ci_true + 1])
+
+SFDM_realloc(c(0, rep(1, 19)), dat, alpha_vec = alpha_a, mu0_cluster = rep(0, K), lambda_cluster = rep(1, K), 
+             a_sigma_cluster = rep(1, K), b_sigma_cluster = rep(1, K), 
+             xi_cluster = rep(1, K))
 
 rm(list = ls())
 K_m <- 5
-set.seed(52)
+set.seed(12)
 ci_true <- sample(0:(K_m-1), 500, replace = TRUE)
-dat <- rnorm(500, seq(-100, 100, length.out = K_m)[(ci_true + 1)])
-hist(scale(dat), breaks = 100)
-K_max <- 5
+dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[(ci_true + 1)])
+hist(dat, breaks = 100)
+K_max <- 10
+
+data.frame(x = ci_true, y = scale(dat, center = TRUE, scale = FALSE)) %>%
+  group_by(x) %>%
+  summarise(mean(y), var(y))
 
 start_time <- Sys.time()
-result <- fmm(10000, K_max, rep(0:0, 500), scale(dat), mu0_cluster = rep(0, K_max), 
-    lambda_cluster = rep(1, K_max), a_sigma_cluster = rep(10, K_max), 
+result <- fmm(5000, K_max, rep(0:0, 500), 
+              scale(dat, center = TRUE, scale = FALSE), mu0_cluster = rep(0, K_max), 
+    lambda_cluster = rep(1, K_max), a_sigma_cluster = rep(1, K_max), 
     b_sigma_cluster = rep(1, K_max), xi_cluster = rep(1, K_max))
 total_time <- difftime(Sys.time(), start_time, units = "secs")
 total_time
 
-clus_assign <- salso(result[-c(1:5000), ], maxNClusters = K_max)
+clus_assign <- salso(result[-c(1:3500), ], maxNClusters = K_max)
 table(clus_assign, ci_true)
 
 quantile(scale(dat)[clus_assign == 2])
