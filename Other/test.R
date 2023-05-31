@@ -27,12 +27,12 @@ rm(list = ls())
 set.seed(32134)
 ### Simulate the data
 ci_true <- sample(1:5, 500, replace = TRUE)
-dat <- rnorm(500, c(-20, -10, 0, 10, 20)[ci_true])
+dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true])
 K_max <- 10
 
 start_time <- Sys.time()
 test_result <- SFDM_model(iter = 5000, K = K_max, init_assign = rep(0, 500), y = dat, 
-                          mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+                          mu0_cluster = rep(20, K_max), lambda_cluster = rep(1, K_max), 
                           a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
                           xi_cluster = rep(1, K_max), a_theta = 1, b_theta = 1, 
                           launch_iter = 10, print_iter = 500)
