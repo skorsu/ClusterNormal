@@ -21,137 +21,128 @@ build()
 install()
 library(ClusterNormal)
 
-### User-defined functions: ----------------------------------------------------
-rm(list = ls())
-n_unique <- function(clus_vec){
-  length(unique(clus_vec))
-}
-
 ### Sandbox: -------------------------------------------------------------------
-set.seed(12)
-K <- 5
-n <- 50
-ci_true <- c(sample(c(2, 5, 1), n, replace = TRUE), 4)
-dat <- rnorm(n+1, c(-5, -2.5, 0, 2.5, 5)[ci_true])
-mu0_vec <- rep(0, K)
-a_sigma_vec <- rep(5:1, 1)
-b_sigma_vec <- rep(1, K)
-lambda_vec <- rep(1:5, 1)
+rm(list = ls())
 
-log_marginal_new(ci_true, dat, a_sigma_vec, b_sigma_vec, lambda_vec, mu0_vec)
-sum(ci_true == 2)
-
-data.frame(ci_true) %>%
-  group_by(ci_true) %>%
-  summarise(n = n()) %>%
-  cbind(lb = lambda_vec[-3], a = a_sigma_vec[-3]) %>%
-  group_by(ci_true) %>%
-  summarise(step5 = (-(n/2) * log(2 * pi)) + (0.5 * log(lb + n)) - (0.5 * log(lb)) +
-              lgamma(a + (0.5 * n)) - lgamma(a))
-
-0.5 * ((1 * sum(ci_true == 4))/(1 + sum(ci_true == 4))) * (0 - mean(dat[ci_true == 4]))^2
-
-dat_list <- list(list(NA, NA, NA, NA), list(NA, NA, NA, NA), 
-                 list(NA, NA, NA, NA), list(NA, NA, NA, NA))
-dat_list[[1]][[1]] <- c(-20, -10, 0, 10, 20)/2
-dat_list[[2]][[1]] <- c(0, 7.5, 15, 25, 35)/2
-dat_list[[3]][[1]] <- c(0, 7.5, 15, 25, 35)
-dat_list[[4]][[1]] <- c(0, 7.5, 15, 25, 35)
-
-dat_list[[1]][[2]] <- 1
-dat_list[[2]][[2]] <- 1
-dat_list[[3]][[2]] <- 1
-dat_list[[4]][[2]] <- 3
-
-dat_list[[1]][[3]] <- "Mean: c(-20, -10, 0, 10, 20)/2 Var = 1"
-dat_list[[2]][[3]] <- "Mean: c(0, 7.5, 15, 25, 35)/2 Var = 1"
-dat_list[[3]][[3]] <- "Mean: c(0, 7.5, 15, 25, 35) Var = 1"
-dat_list[[4]][[3]] <- "Mean: c(0, 7.5, 15, 25, 35) Var = 9"
-
-set.seed(2341)
-for(i in 1:4){
-  actual_clus <- sample(1:5, 500, replace = TRUE)
-  dat <- rnorm(500, (dat_list[[i]][[1]])[actual_clus], dat_list[[i]][[2]])
-  dat_list[[i]][[4]] <- data.frame(dat, actual_clus) %>%
-    ggplot(aes(x = dat, group = factor(actual_clus))) +
-    geom_histogram(aes(y = after_stat(density)), bins = 50, alpha = 0.25) +
-    geom_density(linewidth = 0.75) +
-    theme_bw() +
-    labs(title = dat_list[[i]][[3]], x = "Data", y = "Density") +
-    theme(axis.text = element_text(size = 16),
-          axis.title = element_text(size = 20),
-          plot.title = element_text(size = 28))
-}
-
-grid.arrange(dat_list[[1]][[4]], dat_list[[2]][[4]], 
-             dat_list[[3]][[4]])
-
-load(paste0("/Users/kevin-imac/Desktop/Result/Sensitivity/archive/sensitivity_2.RData"))
-sum_tab(list_result)
-
-
-set.seed(56327189)
+set.seed(32134)
+### Simulate the data
 ci_true <- sample(1:5, 500, replace = TRUE)
-dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true], 1)
-ggplot(data.frame(x = ci_true, y = dat), aes(x = y, group = x)) +
-  geom_density()
-hist(dat, breaks = 100)
-data.frame(x = ci_true, y = scale(dat)) %>%
-  group_by(x) %>%
-  summarise(mean = mean(y), var = var(y))
+dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true])
+K_max <- 10
 
-clus_init <- rep(1:500, 1)
-K <- 10
-xi_vec <- rep(0.1, K)
-mu0_vec <- rep(0, K)
-a_sigma_vec <- rep(1, K)
-b_sigma_vec <- rep(1, K)
-lambda_vec <- rep(1, K)
-a_theta <- 1
-b_theta <- 1
-sm_iter <- 10
+start_time <- Sys.time()
+test_result <- SFDM_model(iter = 5000, K = K_max, init_assign = rep(0, 500), y = dat, 
+                          mu0_cluster = rep(20, K_max), lambda_cluster = rep(1, K_max), 
+                          a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
+                          xi_cluster = rep(1, K_max), a_theta = 1, b_theta = 1, 
+                          launch_iter = 10, print_iter = 500)
+print(Sys.time() - start_time)
 
-model <- SFDM_model(1000, K, clus_init, xi_vec, scale(dat), mu0_vec, 
-                    a_sigma_vec, b_sigma_vec, lambda_vec, a_theta, b_theta, 
-                    sm_iter, 250)
+table(test_result$split_or_merge, test_result$sm_status)
 
-model$iter_alpha
+table(salso(test_result$iter_assign[-c(1:2500), ]), ci_true)
+(1791 + 212)/5000
 
-table(model$sm_status, model$split_or_merge)
+rm(list = ls())
+set.seed(2)
+xi_clus <- rep(0.01, 5)
+ci_true <- rep(0, 20)
+alp <- c(rgamma(1, 0.01, 1), rep(0, 4))
+SFDM_alpha(ci_true, xi_clus, alp, rgamma(1, length(ci_true), sum(alp)))
 
-table(salso(model$iter_assign[-c(1:500), ]), ci_true)
 
-mclustcomp(as.numeric(salso(model$iter_assign[-c(1:500), ])), ci_true)
-
-apply(model$iter_assign, 1, n_unique)
-
-(model$iter_assign[100, ])
-
-u <- rgamma(1, length(clus_a), sum(alpha_vec))
-u
-SFDM_alpha(clus_a, xi_vec, alpha_vec, u)
-
-hist(rgamma(10000, 500, sum(rgamma(1, xi_vec, 1))))
-hist(rgamma(10000, 1, sum(rgamma(1, xi_vec, 1))))
-
-rgamma(1, 250 + 0.01, )
-
+rm(list = ls())
+set.seed(12)
+xi_a <- rep(0.01, 5)
+clus_vec <- sample(0:3, 30, replace = TRUE)
+log_prior_cluster(clus_vec, xi_a)
+table(clus_vec)
+log(factorial(30)) - sum(log(factorial(table(clus_vec)))) +
+  lgamma(0.04) - lgamma(30.04) + sum(lgamma(table(clus_vec) + 0.01)) - sum(lgamma(rep(0.01, 4)))
 
 rm(list = ls())
 set.seed(31)
-ci_actual <- rep(1:3, 5)
-mu0 <- c(-1, 0, 1)
-a_sigma <- c(1, 1, 1.5)
-b_sigma <- c(1, 0.1, 0.1)
-lambda <- c(1, 1, 1)
-y <- rnorm(15)
+ci_true <- rep(0:3, 125)
+dat <- rnorm(500, c(-10, -5, 5, 10)[ci_true + 1])
+K <- 5
 
-log_marginal(ci_actual, y, a_sigma, b_sigma, lambda, mu0)
+test <- SFDM_SM(K, rep(0, 500), dat, alpha_vec = c(rgamma(1, 1, 1), rep(0, 4)),
+        mu0_cluster = rep(0, K), lambda_cluster = rep(1, K), 
+        a_sigma_cluster = rep(1, K), b_sigma_cluster = rep(1, K), 
+        xi_cluster = rep(1, K), launch_iter = 5, a_theta = 1, b_theta = 1)
 
-i <- 10
+accept_vec <- rep(NA, 1000)
+clus_assign <- matrix(NA, nrow = 500, ncol = 1000)
+alpha_assign <- matrix(NA, nrow = K, ncol = 1000)
+for(i in 1:1000){
+  test <- SFDM_SM(K, rep(0, 500), dat, alpha_vec = c(rgamma(1, 1, 1), rep(0, 4)),
+                  mu0_cluster = rep(0, K), lambda_cluster = rep(1, K), 
+                  a_sigma_cluster = rep(1, K), b_sigma_cluster = rep(1, K), 
+                  xi_cluster = rep(1, K), launch_iter = 5, a_theta = 1, b_theta = 1)
+  accept_vec[i] <- test$accept_proposed
+  clus_assign[, i] <- test$new_assign
+  alpha_assign[, i] <- test$new_alpha
+}
 
-log(sqrt(2 * pi))
+mean(accept_vec) * 100
+(1:1000)[accept_vec == 1]
 
+table(clus_assign[, 11])
+clus_assign[, 1]
+alpha_assign[, 11]
 
+rm(list = ls())
+set.seed(402)
+alpha_vec <- rgamma(10, 3, 1)
+alpha_vec
+adjust_alpha(rep(c(0, 3, 2, 1, 6), 10), alpha_vec)
 
-(0 + y[5])/(1 + 1)
+rm(list = ls())
+set.seed(32)
+ci_true <- rep(0:3, 5)
+alpha_a <- c(rgamma(2, 1, 1), rep(0, 3))
+K <- 5
+dat <- rnorm(20, c(-10, -5, 5, 10)[ci_true + 1])
+
+SFDM_realloc(c(0, rep(1, 19)), dat, alpha_vec = alpha_a, mu0_cluster = rep(0, K), lambda_cluster = rep(1, K), 
+             a_sigma_cluster = rep(1, K), b_sigma_cluster = rep(1, K), 
+             xi_cluster = rep(1, K))
+
+rm(list = ls())
+K_m <- 5
+set.seed(12)
+ci_true <- sample(0:(K_m-1), 500, replace = TRUE)
+dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[(ci_true + 1)])
+hist(dat, breaks = 100)
+K_max <- 10
+
+data.frame(x = ci_true, y = scale(dat, center = TRUE, scale = FALSE)) %>%
+  group_by(x) %>%
+  summarise(mean(y), var(y))
+
+start_time <- Sys.time()
+result <- fmm(5000, K_max, rep(0:0, 500), 
+              scale(dat, center = TRUE, scale = FALSE), mu0_cluster = rep(0, K_max), 
+    lambda_cluster = rep(1, K_max), a_sigma_cluster = rep(1, K_max), 
+    b_sigma_cluster = rep(1, K_max), xi_cluster = rep(1, K_max))
+total_time <- difftime(Sys.time(), start_time, units = "secs")
+total_time
+
+clus_assign <- salso(result[-c(1:3500), ], maxNClusters = K_max)
+table(clus_assign, ci_true)
+
+quantile(scale(dat)[clus_assign == 2])
+
+data.frame(x = scale(dat)) %>%
+  arrange(x) %>%
+  mutate(previous = lag(x)) %>%
+  mutate(diff = x - previous) %>%
+  arrange(-diff) %>%
+  head(15)
+
+rm(list = ls())
+test_vec <- rep(NA, 1000)
+for(i in 1:1000){
+  test_vec[i] <- rmultinom_1(rep(0.1, 10), 10)
+}
+table(test_vec)
