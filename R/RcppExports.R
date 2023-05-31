@@ -37,6 +37,10 @@ log_proposal <- function(c1, c2, y, xi_cluster, mu0_cluster, lambda_cluster, a_s
     .Call(`_ClusterNormal_log_proposal`, c1, c2, y, xi_cluster, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, sm_cluster, S_index)
 }
 
+log_prior_cluster <- function(cluster_assign, xi_cluster) {
+    .Call(`_ClusterNormal_log_prior_cluster`, cluster_assign, xi_cluster)
+}
+
 SFDM_realloc <- function(old_assign, y, alpha_vec, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster) {
     .Call(`_ClusterNormal_SFDM_realloc`, old_assign, y, alpha_vec, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster)
 }
@@ -45,20 +49,12 @@ SFDM_SM <- function(K, old_assign, y, alpha_vec, mu0_cluster, lambda_cluster, a_
     .Call(`_ClusterNormal_SFDM_SM`, K, old_assign, y, alpha_vec, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster, launch_iter, a_theta, b_theta)
 }
 
-log_alloc_prob <- function(i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, restricted) {
-    .Call(`_ClusterNormal_log_alloc_prob`, i, active_clus, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, restricted)
+SFDM_alpha <- function(clus_assign, xi_cluster, alpha_vec, old_u) {
+    .Call(`_ClusterNormal_SFDM_alpha`, clus_assign, xi_cluster, alpha_vec, old_u)
 }
 
-samp_new <- function(log_prob_mat) {
-    .Call(`_ClusterNormal_samp_new`, log_prob_mat)
-}
-
-SFDM_allocate <- function(K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha) {
-    .Call(`_ClusterNormal_SFDM_allocate`, K, old_assign, xi, y, a_sigma, b_sigma, lambda, mu0, old_alpha)
-}
-
-SFDM_alpha <- function(clus_assign, xi, old_alpha, old_u) {
-    .Call(`_ClusterNormal_SFDM_alpha`, clus_assign, xi, old_alpha, old_u)
+SFDM_model <- function(iter, K, init_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster, a_theta, b_theta, launch_iter, print_iter) {
+    .Call(`_ClusterNormal_SFDM_model`, iter, K, init_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster, a_theta, b_theta, launch_iter, print_iter)
 }
 
 rcpparma_hello_world <- function() {
