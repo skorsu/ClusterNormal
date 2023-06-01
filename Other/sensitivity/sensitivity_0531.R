@@ -4,8 +4,10 @@ rm(list = ls())
 overall_seed <- 30184
 n_para <- 30
 scenario_now <- 1 ## Scenario
+alg_iter <- 3000
 save_path <- NULL ## The location where we will save the result
-save_name <- paste0(save_path, "sensitivity_", scenario_now, ".RData")
+save_name_analysis <- paste0(save_path, "sensitivity_", scenario_now, ".RData") 
+centered <- FALSE ## center the data
 ###: ---------------------------------------------------------------------------
 
 ### Required Packages: ---------------------------------------------------------
@@ -55,7 +57,9 @@ f_data_sim <- function(sim_seed, scenario_index){
 ###: ---------------------------------------------------------------------------
 
 ### Sensitivity Analysis: ------------------------------------------------------
-### Updated 3/18/2023: Perform a sensitivity analysis for all four scenarios.
+### Updated 5/31/2023: Using the original data and let the program save the raw 
+###                    result as well.
+### Updated 5/18/2023: Perform a sensitivity analysis for all four scenarios.
 
 ### Step 1: Simulate the data based on the scenarios
 ### Using the "f_data_sim" function.
@@ -95,14 +99,18 @@ colnames(hyper_set) <- c("K", "xi", "lambda", "as", "bs", "at", "bt", "iter")
 ### Each parallel represents each setting. We will loop through each simulated data.
 ### Define global parameters
 
-iter <- 1000
-ci_init <- sample(1:1, 500, replace = TRUE)
+ci_init <- sample(0:0, 500, replace = TRUE)
 
 ### Start the algorithm
 set.seed(31807)
 overall_start <- Sys.time()
-registerDoParallel(detectCores() - 5)
+registerDoParallel(detectCores() - 2)
+
 list_result <- foreach(i = 1:nrow(hyper_set)) %dorng%{
+  
+  ### Create an object for storing the result
+  list_store <- rep(list(result = NA, time = NA, actual_clus = NA,
+                         split_or_merge = NA, result_status = NA), n_para)
   
   ### Hyperparameters
   K <- hyper_set[i, "K"]
@@ -116,45 +124,51 @@ list_result <- foreach(i = 1:nrow(hyper_set)) %dorng%{
   sm_iter <- hyper_set[i, "iter"]
   
   ### Matrix for storing the final result
-  result_mat <- data.frame(matrix(NA, ncol = 6, nrow = n_para))
-  colnames(result_mat) <- c("Run Time", "Jaccard", "VI", "P(Merge|Accept)", 
-                            "P(Split|Accept)", "P(Accept)")
+  ### result_mat <- data.frame(matrix(NA, ncol = 7, nrow = n_para))
+  ### colnames(result_mat) <- c("Run Time", "Clusters", "Jaccard", "VI", 
+  ###                           "P(Merge|Accept)", "P(Split|Accept)", "P(Accept)")
 
   ### Loop through each data set
   for(t in 1:n_para){
     
     ### Data for each parallel
-    clus_index <- list_data[[t]]$actual_clus
-    scaled_dat <- scale(list_data[[t]]$dat)
-    
+    list_store[[t]]$actual_clus <- list_data[[t]]$actual_clus
+    ### clus_index <- list_data[[t]]$actual_clus
+    scaled_dat <- scale(list_data[[t]]$dat, center = centered, scale = FALSE)
     start_time <- Sys.time()
-    result <- SFDM_model(iter, K, ci_init, xi_vec, scaled_dat, mu0_vec, 
-                         a_sigma_vec, b_sigma_vec, lambda_vec, a_theta, b_theta, 
-                         sm_iter, 250)
+    result <- SFDM_model(alg_iter, K, ci_init, scaled_dat, mu0_vec, lambda_vec,
+                         a_sigma_vec, b_sigma_vec, xi_vec, a_theta, b_theta, 
+                         sm_iter, 500)
     run_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+    list_store[[t]]$time <- run_time
+    list_store[[t]]$result <- result$iter_assign
+    list_store[[t]]$split_or_merge <- result$split_or_merge
+    list_store[[t]]$result_status <- result$sm_status
     
-    clus_result <- as.numeric(salso(result$iter_assign[-(1:500), ]))
-    jacc_score <- mclustcomp(clus_index, clus_result, types = "jaccard")$scores
-    vi_score <- mclustcomp(clus_index, clus_result, types = "vi")$scores
+    ### clus_result <- as.numeric(salso(result$iter_assign[-(1:alg_burn_in), ],
+    ###                                 maxNClusters = K))
+    ### jacc_score <- mclustcomp(clus_index, clus_result, types = "jaccard")$scores
+    ### vi_score <- mclustcomp(clus_index, clus_result, types = "vi")$scores
     
-    result_status <- factor(result$sm_status)
-    levels(result_status) <- c("Reject", "Accept")
-    result_sm <- factor(result$split_or_merge)
-    levels(result_sm) <- c("Merge", "Split")
-    result_tab <- table(result_status, result_sm)
-    prob_accept <- result_tab[2, ]/table(result_sm)
+    ### result_status <- factor(result$sm_status)
+    ### levels(result_status) <- c("Reject", "Accept")
+    ### result_sm <- factor(result$split_or_merge)
+    ### levels(result_sm) <- c("Merge", "Split")
+    ### result_tab <- table(result_status, result_sm)
+    ### prob_accept <- result_tab[2, ]/table(result_sm)
     
-    result_mat[t, ] <- c(run_time, jacc_score, vi_score, prob_accept, 
-                         mean(result$sm_status))
+    ### result_mat[t, ] <- c(run_time, length(unique(clus_result)), jacc_score, 
+    ###                      vi_score, prob_accept, mean(result$sm_status))
     
   }
-  return(result_mat)
+  return(list_store)
 }
 stopImplicitCluster()
+print("-----------------------------------------------------")
 print(Sys.time() - overall_start)
 
 ### Step 4: Save the result
-save(list_result, file = save_name)
+save(list_result, file = save_name_analysis)
 
 ###: ---------------------------------------------------------------------------
 

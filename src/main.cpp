@@ -315,6 +315,38 @@ arma::vec split_launch(arma::vec old_assign, arma::vec y, arma::vec mu0_cluster,
 }
 
 // [[Rcpp::export]]
+double log_likelihood(arma::vec clus_assign, arma::vec y, arma::vec mu0_cluster, 
+                      arma::vec lambda_cluster, arma::vec a_sigma_cluster, 
+                      arma::vec b_sigma_cluster){
+  
+  /* Description: -
+   * Output: -
+   * Input: -
+   */
+  
+  double result = 0.0;
+  
+  // Get the list of the active cluster
+  arma::vec active_clus = arma::unique(clus_assign);
+  
+  for(int k = 0; k < active_clus.size(); ++k){
+    int cc = active_clus[k];
+    arma::vec y_cc = y.rows(arma::find(clus_assign == cc));
+    for(int i = 0; i < y_cc.size(); ++i){
+      if(i == 0){
+        result += log_marginal(y_cc.row(0), cc, mu0_cluster, lambda_cluster, 
+                               a_sigma_cluster, b_sigma_cluster);
+      } else {
+        result += log_posterior(y_cc.row(i), y_cc.head_rows(i), cc, mu0_cluster, 
+                                lambda_cluster, a_sigma_cluster, b_sigma_cluster);
+      }
+    }
+  }
+  
+  return result;
+} 
+
+// [[Rcpp::export]]
 double log_proposal(arma::vec c1, arma::vec c2, arma::vec y, 
                     arma::vec xi_cluster, arma::vec mu0_cluster, 
                     arma::vec lambda_cluster, arma::vec a_sigma_cluster, 
@@ -610,7 +642,7 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec y, arma::vec alpha_vec
                           old_now, mu0_cluster, lambda_cluster, 
                           a_sigma_cluster, b_sigma_cluster);
   }
-
+  
   log_A += log_prior_cluster(proposed_assign, xi_cluster);
   log_A -= log_prior_cluster(old_assign, xi_cluster);
   
@@ -632,6 +664,7 @@ Rcpp::List SFDM_SM(int K, arma::vec old_assign, arma::vec y, arma::vec alpha_vec
   sm_result["new_alpha"] = new_alpha;
   
   return sm_result;
+  
 } 
 
 // [[Rcpp::export]]

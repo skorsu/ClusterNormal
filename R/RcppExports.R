@@ -33,6 +33,10 @@ split_launch <- function(old_assign, y, mu0_cluster, lambda_cluster, a_sigma_clu
     .Call(`_ClusterNormal_split_launch`, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, sm_cluster, S_index)
 }
 
+log_likelihood <- function(clus_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
+    .Call(`_ClusterNormal_log_likelihood`, clus_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
+}
+
 log_proposal <- function(c1, c2, y, xi_cluster, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, sm_cluster, S_index) {
     .Call(`_ClusterNormal_log_proposal`, c1, c2, y, xi_cluster, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, sm_cluster, S_index)
 }

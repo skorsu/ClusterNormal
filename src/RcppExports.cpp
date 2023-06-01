@@ -134,6 +134,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// log_likelihood
+double log_likelihood(arma::vec clus_assign, arma::vec y, arma::vec mu0_cluster, arma::vec lambda_cluster, arma::vec a_sigma_cluster, arma::vec b_sigma_cluster);
+RcppExport SEXP _ClusterNormal_log_likelihood(SEXP clus_assignSEXP, SEXP ySEXP, SEXP mu0_clusterSEXP, SEXP lambda_clusterSEXP, SEXP a_sigma_clusterSEXP, SEXP b_sigma_clusterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type clus_assign(clus_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu0_cluster(mu0_clusterSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_cluster(lambda_clusterSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type a_sigma_cluster(a_sigma_clusterSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type b_sigma_cluster(b_sigma_clusterSEXP);
+    rcpp_result_gen = Rcpp::wrap(log_likelihood(clus_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster));
+    return rcpp_result_gen;
+END_RCPP
+}
 // log_proposal
 double log_proposal(arma::vec c1, arma::vec c2, arma::vec y, arma::vec xi_cluster, arma::vec mu0_cluster, arma::vec lambda_cluster, arma::vec a_sigma_cluster, arma::vec b_sigma_cluster, arma::vec sm_cluster, arma::uvec S_index);
 RcppExport SEXP _ClusterNormal_log_proposal(SEXP c1SEXP, SEXP c2SEXP, SEXP ySEXP, SEXP xi_clusterSEXP, SEXP mu0_clusterSEXP, SEXP lambda_clusterSEXP, SEXP a_sigma_clusterSEXP, SEXP b_sigma_clusterSEXP, SEXP sm_clusterSEXP, SEXP S_indexSEXP) {
@@ -296,6 +312,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_fmm", (DL_FUNC) &_ClusterNormal_fmm, 9},
     {"_ClusterNormal_adjust_alpha", (DL_FUNC) &_ClusterNormal_adjust_alpha, 2},
     {"_ClusterNormal_split_launch", (DL_FUNC) &_ClusterNormal_split_launch, 8},
+    {"_ClusterNormal_log_likelihood", (DL_FUNC) &_ClusterNormal_log_likelihood, 6},
     {"_ClusterNormal_log_proposal", (DL_FUNC) &_ClusterNormal_log_proposal, 10},
     {"_ClusterNormal_log_prior_cluster", (DL_FUNC) &_ClusterNormal_log_prior_cluster, 2},
     {"_ClusterNormal_SFDM_realloc", (DL_FUNC) &_ClusterNormal_SFDM_realloc, 8},

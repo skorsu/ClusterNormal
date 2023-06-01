@@ -22,26 +22,46 @@ install()
 library(ClusterNormal)
 
 ### Sandbox: -------------------------------------------------------------------
-rm(list = ls())
 
+rm(list = ls())
+elm <- list(result = matrix(NA, ncol = 3, nrow = 10), time = NA)
+mylist_1 <- rep(list(elm), 2)
+mylist_2 <- rep(list(elm), 2)
+overall_result <- list(mylist_1, mylist_2)
+overall_result[[1]]
+
+
+rm(list = ls())
+ci_true <- sample(rep(c(2, 3, 0), 10))
+dat <- -(1:30)
+K_max <- 10
+log_likelihood(ci_true, dat, mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
+               a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max))
+
+
+rm(list = ls())
 set.seed(32134)
 ### Simulate the data
 ci_true <- sample(1:5, 500, replace = TRUE)
-dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true])
+dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true], 1)
 K_max <- 10
 
 start_time <- Sys.time()
-test_result <- SFDM_model(iter = 5000, K = K_max, init_assign = rep(0, 500), y = dat, 
-                          mu0_cluster = rep(20, K_max), lambda_cluster = rep(1, K_max), 
+test_result <- SFDM_model(iter = 3000, K = K_max, init_assign = rep(0, 500), y = scale(dat, center = TRUE, scale = FALSE), 
+                          mu0_cluster = rep(0, K_max), lambda_cluster = rep(1, K_max), 
                           a_sigma_cluster = rep(1, K_max), b_sigma_cluster = rep(1, K_max), 
                           xi_cluster = rep(1, K_max), a_theta = 1, b_theta = 1, 
-                          launch_iter = 10, print_iter = 500)
+                          launch_iter = 10, print_iter = 1000)
 print(Sys.time() - start_time)
 
-table(test_result$split_or_merge, test_result$sm_status)
+sp_status <- factor(test_result$split_or_merge)
+levels(sp_status) <- c("Merge", "Split")
 
-table(salso(test_result$iter_assign[-c(1:2500), ]), ci_true)
-(1791 + 212)/5000
+table(sp_status, test_result$sm_status)
+
+table(salso(test_result$iter_assign[-c(1:1000), ]), ci_true)
+
+plot(apply(test_result$iter_assign, 1, function(x) length(unique(x))), type = "l")
 
 rm(list = ls())
 set.seed(2)
@@ -62,7 +82,7 @@ log(factorial(30)) - sum(log(factorial(table(clus_vec)))) +
 
 rm(list = ls())
 set.seed(31)
-ci_true <- rep(0:3, 125)
+ci_true <- rep(0:0, 500)
 dat <- rnorm(500, c(-10, -5, 5, 10)[ci_true + 1])
 K <- 5
 
@@ -70,6 +90,9 @@ test <- SFDM_SM(K, rep(0, 500), dat, alpha_vec = c(rgamma(1, 1, 1), rep(0, 4)),
         mu0_cluster = rep(0, K), lambda_cluster = rep(1, K), 
         a_sigma_cluster = rep(1, K), b_sigma_cluster = rep(1, K), 
         xi_cluster = rep(1, K), launch_iter = 5, a_theta = 1, b_theta = 1)
+
+test$old_lik
+test$new_lik
 
 accept_vec <- rep(NA, 1000)
 clus_assign <- matrix(NA, nrow = 500, ncol = 1000)
