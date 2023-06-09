@@ -23,6 +23,38 @@ library(ClusterNormal)
 
 ### Sandbox: -------------------------------------------------------------------
 
+#### Storing the intermediate Result
+set.seed(3214)
+dat <- scale(dat, scale = FALSE)
+xin <- rep(0, K_max)
+mun <- rep(0, K_max)
+kn <- rep(0, K_max)
+nun <- rep(0, K_max)
+s2n <- rep(0, K_max)
+SS_vec <- rep(0, K_max)
+
+for(k in 1:3){
+  nk <- sum(ci_true == k)
+  ybar <- ifelse(nk > 0, mean(dat[ci_true == k]), 0)
+  SS_vec[k] <- ifelse(nk > 1, (nk - 1) * var(dat[ci_true == k]), 0)
+  kn[k] <- k0 + nk 
+  nun[k] <- nu0 + nk
+  mun[k] <- (k0*mu0 + nk*ybar)/kn[k]
+  s2n[k] <- (nu0*s20 + SS_vec[k] + k0*nk*(ybar-mu0)^2/kn[k])/(nun[k])
+  xin[k] <- xi0 + nk
+}
+
+mu_vec <- matrix(NA, nrow = 1000, ncol = 3)
+s2_vec <- matrix(NA, nrow = 1000, ncol = 3)
+
+for(i in 1:1000){
+  s2_vec[i, ] <- 1/(rgamma(K_max, nun/2, (nun * s2n)/2))
+  mu_vec[i, ] <- rnorm(K_max, mun, sqrt(s2_vec[i, ]/kn))
+}
+
+apply(s2_vec, 2, mean)
+
+
 rm(list = ls())
 elm <- list(result = matrix(NA, ncol = 3, nrow = 10), time = NA)
 mylist_1 <- rep(list(elm), 2)
