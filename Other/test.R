@@ -22,6 +22,35 @@ install()
 library(ClusterNormal)
 
 ### Sandbox: -------------------------------------------------------------------
+set.seed(31807)
+ci_true <- rep(1:5, 10)
+dat <- rnorm(50, c(0, 7.5, 15, 25, 35)[ci_true], 1)
+
+test_result <- fmm_rcpp(iter = 10000, y = dat, K_max = 5, 
+                        a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                        ci_init = rep(1, 50))
+
+table(salso(test_result$assign_mat[-c(1:7500), ], maxNClusters = 5), ci_true)
+plot(test_result$mu[-c(1:7500), 2], type = "l")
+
+hist(test_result$mu[-c(1:7500), 4])
+apply(test_result$mu[-c(1:7500), ], 2, mean)
+apply(test_result$sigma2[-c(1:7500), ], 2, mean)
+
+plot(test_result$sigma2[-c(1:7500), 4], type = "l")
+
+hist(test_result$sigma2)
+hist(rnorm(10000, 0, sqrt(100)))
+qqplot(test_result$sigma2, 1/rgamma(10000, 1, 1))
+abline(0, 1)
+rm(list = ls())
+set.seed(1243)
+mu <- rnorm(1, 0, sqrt(1000))
+s2 <- 1/(rgamma(1, 1, 1))
+y <- rnorm(1, mu, sqrt(s2))
+log_marginal(y, mu0 = 0, s20 = 1000, a = 3, b = 4, mu, s2)
+  
+(-((y - mu)^2)/(2 * s2)) + (3.5 * log(4 + (0.5 * ((y - mu)^2)))) + ((y^2)/(2 * (s2 + 1000)))
 
 #### Storing the intermediate Result
 set.seed(3214)
