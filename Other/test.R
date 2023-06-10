@@ -25,19 +25,57 @@ library(ClusterNormal)
 set.seed(31807)
 ci_true <- rep(1:5, 10)
 dat <- rnorm(50, c(0, 7.5, 15, 25, 35)[ci_true], 1)
+ci_init <- rep(c(2, 3), 25)
+mu_init <- rnorm(5, 0, sqrt(100))
+s2_init <- 1/rgamma(5, 1, 1)
+alpha_init <- c(0, 0, rgamma(2, 1, 1), 0)
+
+data.frame(mu_init, s2_init, alpha_init)
+
+ggplot(data.frame(x = ci_true, y = dat), aes(x = y, fill = factor(x))) +
+  geom_histogram(bins = 20) +
+  theme_bw()
+
+test <- SFDMM_realloc(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                      ci_init = rep(c(2, 3), 25), mu = mu_init, s2 = s2_init, 
+                      alpha_vec = alpha_init)
+data.frame(test$new_mu, test$new_s2, test$new_alpha)
+
+SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+         ci_init = ci_init, mu = mu_init, s2 = s2_init, 
+         alpha_init = alpha_init, launch_iter = 10, a_theta = 1, b_theta = 1)
+
+table(ci_true, test$new_ci)
+
+sp <- rep(NA, 1000)
+for(i in 1:1000){
+  sp[i] <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                    ci_init = ci_init, mu_init = mu_init, s2_init = s2_init, 
+                    alpha_vec = alpha_init, launch_iter = 10, a_theta = 1, b_theta = 1)$split_ind
+}
+
+table(sp)
+
+
+mean(dat)
+var(dat)
 
 test_result <- fmm_rcpp(iter = 10000, y = dat, K_max = 5, 
                         a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
                         ci_init = rep(1, 50))
 
 table(salso(test_result$assign_mat[-c(1:7500), ], maxNClusters = 5), ci_true)
-plot(test_result$mu[-c(1:7500), 2], type = "l")
+plot(test_result$mu[-c(1:7500), 5], type = "l")
+
+data.frame(y = scale(dat), x = rep(1:5, 10)) %>%
+  group_by(x) %>%
+  summarise(mean(y), var(y))
 
 hist(test_result$mu[-c(1:7500), 4])
-apply(test_result$mu[-c(1:7500), ], 2, mean)
-apply(test_result$sigma2[-c(1:7500), ], 2, mean)
+apply(test_result$mu[-c(1:25000), ], 2, mean)
+apply(test_result$sigma2[-c(1:25000), ], 2, mean)
 
-plot(test_result$sigma2[-c(1:7500), 4], type = "l")
+plot(test_result$mu[-c(1:7500), 5], type = "l")
 
 hist(test_result$sigma2)
 hist(rnorm(10000, 0, sqrt(100)))
