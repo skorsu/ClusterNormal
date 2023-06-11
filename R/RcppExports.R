@@ -9,8 +9,28 @@ log_marginal <- function(yi, mu0, s20, a, b, mu, s2) {
     .Call(`_ClusterNormal_log_marginal`, yi, mu0, s20, a, b, mu, s2)
 }
 
+rmultinom_1 <- function(probs, N) {
+    .Call(`_ClusterNormal_rmultinom_1`, probs, N)
+}
+
+adjust_alpha <- function(K_max, clus_assign, alpha_vec) {
+    .Call(`_ClusterNormal_adjust_alpha`, K_max, clus_assign, alpha_vec)
+}
+
+SFDMM_rGibbs <- function(y, sm_clus, a0, b0, mu0, s20, ci_init, mu, s2, S) {
+    .Call(`_ClusterNormal_SFDMM_rGibbs`, y, sm_clus, a0, b0, mu0, s20, ci_init, mu, s2, S)
+}
+
 fmm_rcpp <- function(iter, y, K_max, a0, b0, mu0, s20, xi0, ci_init) {
     .Call(`_ClusterNormal_fmm_rcpp`, iter, y, K_max, a0, b0, mu0, s20, xi0, ci_init)
+}
+
+SFDMM_realloc <- function(y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu, s2, alpha_vec) {
+    .Call(`_ClusterNormal_SFDMM_realloc`, y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu, s2, alpha_vec)
+}
+
+SFDMM_SM <- function(y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu_init, s2_init, alpha_init, launch_iter, a_theta, b_theta) {
+    .Call(`_ClusterNormal_SFDMM_SM`, y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu_init, s2_init, alpha_init, launch_iter, a_theta, b_theta)
 }
 
 rcpparma_hello_world <- function() {

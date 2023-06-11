@@ -47,6 +47,10 @@ SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1,
 
 table(ci_true, test$new_ci)
 
+SFDMM_rGibbs(dat, sm_clus = c(3, 4), a0 = 1, b0 = 1, 
+             mu0 = 0, s20 = 100, xi0 = 1, rep(3:4, 25), 
+             mu = mu_init, s2 = s2_init, 0:49)
+
 sp <- rep(NA, 1000)
 for(i in 1:1000){
   sp[i] <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 

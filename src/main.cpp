@@ -70,8 +70,6 @@ arma::vec adjust_alpha(int K_max, arma::vec clus_assign, arma::vec alpha_vec){
   
   /* Description: To adjust the alpha vector. Keep only the element with at 
    *              least 1 observation is allocated to.
-   * Input: maximum cluster (K), cluster assignment, cluster weight (alpha_vec)
-   * Output: adjusted alpha vector
    */
   
   arma::vec new_active_clus = arma::unique(clus_assign);
@@ -79,6 +77,68 @@ arma::vec adjust_alpha(int K_max, arma::vec clus_assign, arma::vec alpha_vec){
   a_alpha.elem(index_active) = alpha_vec.elem(index_active);
   
   return a_alpha;
+}
+
+// [[Rcpp::export]]
+Rcpp::List SFDMM_rGibbs(arma::vec y, arma::vec sm_clus, double a0, double b0, 
+                        double mu0, double s20, arma::vec ci_init, 
+                        arma::vec mu, arma::vec s2, arma::vec S){
+  
+  /* Description: This function will perform a restricted Gibbs sampler based on
+   *              Neal (3.14)
+   */
+  
+  Rcpp::List result;
+  
+  unsigned int sm_size = sm_clus.size();
+  
+  // Reallocate the observation to one of the active cluster.
+  for(int i = 0; i < S.size(); ++i){
+    
+    int s = S[i];
+    
+    arma::vec log_realloc(2, arma::fill::value(0.0));
+    
+    double yi = y[s];
+    arma::vec c_not_i(ci_init);
+    c_not_i.shed_row(s);
+    
+    for(int k = 0; k < 2; ++k){
+      int cc = sm_clus[k];
+      arma::uvec nk_vec = arma::find(c_not_i == cc);
+      double l_re = std::log(nk_vec.size());
+      
+      if(nk_vec.size() == 0){
+        l_re += log_marginal(yi, mu0, s20, a0, b0, mu[cc], s2[cc]);
+      } else {
+        l_re += R::dnorm4(yi, mu[cc], std::sqrt(s2[cc]), 1);
+      }
+      
+      log_realloc.row(k).fill(l_re);
+      
+    }
+    
+    std::cout << "current_obs: " << s << std::endl;
+  
+    Rcpp::NumericVector realloc_prob = Rcpp::as<Rcpp::NumericVector>(Rcpp::wrap(log_sum_exp(log_realloc)));
+    
+    std::cout << "realloc_prob: " << realloc_prob << std::endl;
+    
+    Rcpp::IntegerVector ind_vec = rmultinom_1(realloc_prob, sm_size);
+    
+    std::cout << "ind_vec: " << ind_vec << std::endl;
+    
+    arma::vec ind_arma = Rcpp::as<arma::vec>(Rcpp::wrap(ind_vec));
+    arma::uword new_assign_i = arma::index_max(ind_arma);
+    
+    std::cout << "new_assign_i: " << new_assign_i << std::endl;
+    
+    ci_init.row(i).fill(sm_clus[new_assign_i]);
+    
+  }
+  
+  return result;
+  
 }
 
 // Finite Mixture Model: -------------------------------------------------------
@@ -149,16 +209,7 @@ Rcpp::List fmm_rcpp(int iter, arma::vec y, unsigned int K_max, double a0,
       
       for(int k = 0; k < K_max; ++k){
         arma::uvec nk_vec = arma::find(c_not_i == k);
-        double l_re = std::log(nk_vec.size() + xi0);
-        
-        if(nk_vec.size() == 0){
-          l_re += log_marginal(yi, mu0, s20, a0, b0, mu[k], s2[k]);
-        } else {
-          l_re += R::dnorm4(yi, mu[k], std::sqrt(s2[k]), 1);
-        }
-        
-        log_realloc.row(k).fill(l_re);
-
+        log_realloc.row(k).fill(std::log(nk_vec.size() + xi0) + R::dnorm4(yi, mu[k], std::sqrt(s2[k]), 1));
       }
       
       Rcpp::NumericVector realloc_prob = Rcpp::as<Rcpp::NumericVector>(Rcpp::wrap(log_sum_exp(log_realloc)));

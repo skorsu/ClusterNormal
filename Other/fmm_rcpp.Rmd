@@ -18,17 +18,15 @@ library(doParallel)
 library(doRNG)
 ```
 
+### Updated Note (6/10/2023)
+
+  - Instead of calculating the reallocation probability for the empty clusters by using the marginal distribution, I plug in $\mu_{k}$ and $\sigma^{2}_{k}$ (sample from prior), into the likelihood. 
+
 ### Note
 
-  - For the R code, the code for the function is in `fmm_R.R`.
   - For the Rcpp code, the code is on Github. (branch: `test`)
   - I will use the same datasets as in the previous report. (FMM - R; 6/8/2023)
   - Based on the comment, I will run 10,000 iterations in total, but I will let the first 7,500 iterations as a burn-in.
-
-```{r}
-### Import the function from the other file
-source("/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/Other/fmm_R.R")
-```
 
 ### Model
 
@@ -274,7 +272,8 @@ list_result <- foreach(i = 1:10) %dorng%{
   test_result <- fmm_rcpp(iter = 10000, y = dat_sim, K_max = K, 
                         a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
                         ci_init = rep(0, N))
-  return(list(clus_assign = test_result$assign_mat, ci_true = ci_true))
+  return(list(clus_assign = test_result$assign_mat, ci_true = ci_true,
+              mu = test_result$mu))
 }
 stopImplicitCluster()
 ```
@@ -283,6 +282,60 @@ stopImplicitCluster()
 jac_vec <- rep(NA, 10)
 for(i in 1:10){
   ci_assign <- as.numeric(salso(list_result[[i]]$clus_assign[-c(1:7500), ], 
+                              maxNClusters = K))
+  jac_vec[i] <- mclustcomp(ci_assign, list_result[[i]]$ci_true, "jaccard")$score
+}
+
+mean(jac_vec)
+sd(jac_vec)
+```
+
+I noticed that there is one chain that might not be converged. Based on the trace plot below, I decide to increase the number of iteration to 15,000 iterations and let the first 10,000 iterations as a burn-in.
+
+```{r}
+plot(list_result[[2]]$mu[, 1], type = "l", ylim = c(-5, 50), 
+     col = "red", main = "mu", ylab = "mu", xlab = "iteration")
+lines(1:10000, list_result[[2]]$mu[, 2], col = "blue")
+lines(1:10000, list_result[[2]]$mu[, 3], col = "salmon")
+lines(1:10000, list_result[[2]]$mu[, 4], col = "green")
+lines(1:10000, list_result[[2]]$mu[, 5], col = "grey")
+
+abline(v = c(7500, 9000))
+```
+```{r}
+set.seed(352)
+registerDoParallel(detectCores() - 1)
+list_result <- foreach(i = 1:10) %dorng%{
+  N <- 500
+  K <- 5
+  ci_true <- sample(1:K, N, replace = TRUE)
+  dat_sim <- rnorm(N, c(0, 7.5, 15, 25, 35)[ci_true], 1)
+  test_result <- fmm_rcpp(iter = 15000, y = dat_sim, K_max = K, 
+                        a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                        ci_init = rep(0, N))
+  return(list(clus_assign = test_result$assign_mat, ci_true = ci_true,
+              mu = test_result$mu))
+}
+stopImplicitCluster()
+```
+
+```{r}
+plot(list_result[[2]]$mu[, 1], type = "l", ylim = c(-5, 50), 
+     col = "red", main = "mu", ylab = "mu", xlab = "iteration")
+lines(1:15000, list_result[[2]]$mu[, 2], col = "blue")
+lines(1:15000, list_result[[2]]$mu[, 3], col = "salmon")
+lines(1:15000, list_result[[2]]$mu[, 4], col = "green")
+lines(1:15000, list_result[[2]]$mu[, 5], col = "grey")
+
+abline(v = 10000)
+```
+
+The result look much better when I increase the number of iterations and burn-ins.
+
+```{r}
+jac_vec <- rep(NA, 10)
+for(i in 1:10){
+  ci_assign <- as.numeric(salso(list_result[[i]]$clus_assign[-c(1:10000), ], 
                               maxNClusters = K))
   jac_vec[i] <- mclustcomp(ci_assign, list_result[[i]]$ci_true, "jaccard")$score
 }
