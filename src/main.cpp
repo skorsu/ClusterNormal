@@ -36,23 +36,6 @@ arma::vec log_sum_exp(arma::vec log_unnorm_prob){
 }
 
 // [[Rcpp::export]]
-double log_marginal(double yi, double mu0, double s20, double a, double b,
-                    double mu, double s2){
-  
-  /* Description: This function will calculate the proportional of the log 
-   *              marginal distribution for the inactive clusters. 
-   */
-  
-  double result = 0.0;
-  
-  result -= (0.5 * (1/s2) * std::pow(yi - mu, 2.0));
-  result += ((a + 0.5) * std::log(b + (0.5 * std::pow(yi - mu, 2.0))));
-  result += (0.5 * (1/(s2 + s20)) * std::pow(yi - mu0, 2.0));
-  
-  return result;
-}
-
-// [[Rcpp::export]]
 Rcpp::IntegerVector rmultinom_1(Rcpp::NumericVector &probs, unsigned int &N){
   
   /* Description: sample from the multinomial(N, probs).
@@ -80,12 +63,12 @@ arma::vec adjust_alpha(int K_max, arma::vec clus_assign, arma::vec alpha_vec){
 }
 
 // [[Rcpp::export]]
-Rcpp::List SFDMM_rGibbs(arma::vec y, arma::vec sm_clus, double a0, double b0, 
-                        double mu0, double s20, arma::vec ci_init, 
-                        arma::vec mu, arma::vec s2, arma::vec S){
+Rcpp::List SFDMM_rGibbs(arma::vec y, arma::vec sm_clus, arma::vec ci_init, 
+                        arma::vec mu, arma::vec s2, arma::uvec S, 
+                        double a0, double b0, double mu0, double s20){
   
   /* Description: This function will perform a restricted Gibbs sampler based on
-   *              Neal (3.14)
+   *              Neal (3.14). Also, we will update mu and s2 in each iteration.
    */
   
   Rcpp::List result;
@@ -106,39 +89,145 @@ Rcpp::List SFDMM_rGibbs(arma::vec y, arma::vec sm_clus, double a0, double b0,
     for(int k = 0; k < 2; ++k){
       int cc = sm_clus[k];
       arma::uvec nk_vec = arma::find(c_not_i == cc);
-      double l_re = std::log(nk_vec.size());
-      
-      if(nk_vec.size() == 0){
-        l_re += log_marginal(yi, mu0, s20, a0, b0, mu[cc], s2[cc]);
-      } else {
-        l_re += R::dnorm4(yi, mu[cc], std::sqrt(s2[cc]), 1);
-      }
-      
-      log_realloc.row(k).fill(l_re);
-      
+      log_realloc.row(k).fill(std::log(nk_vec.size()) + R::dnorm4(yi, mu[cc], std::sqrt(s2[cc]), 1));
     }
     
-    std::cout << "current_obs: " << s << std::endl;
-  
+    // Sample from the rmultinomial
     Rcpp::NumericVector realloc_prob = Rcpp::as<Rcpp::NumericVector>(Rcpp::wrap(log_sum_exp(log_realloc)));
-    
-    std::cout << "realloc_prob: " << realloc_prob << std::endl;
-    
     Rcpp::IntegerVector ind_vec = rmultinom_1(realloc_prob, sm_size);
-    
-    std::cout << "ind_vec: " << ind_vec << std::endl;
-    
     arma::vec ind_arma = Rcpp::as<arma::vec>(Rcpp::wrap(ind_vec));
     arma::uword new_assign_i = arma::index_max(ind_arma);
     
-    std::cout << "new_assign_i: " << new_assign_i << std::endl;
-    
-    ci_init.row(i).fill(sm_clus[new_assign_i]);
+    ci_init.row(s).fill(sm_clus[new_assign_i]);
     
   }
   
+  // Update mu and s2
+  for(int k = 0; k < 2; ++k){
+    int cc = sm_clus[k];
+    arma::uvec nk_vec = arma::find(ci_init == cc);
+    double nk = nk_vec.size();
+    double an = 0.0;
+    double bn = 0.0;
+    double mun = 0.0;
+    double s2n = 0.0;
+    
+    if(nk == 0){
+      an = a0;
+      bn = b0;
+      mun = mu0;
+      s2n = s20;
+    } else {
+      arma::vec yk = y.rows(nk_vec);
+      an = (a0 + (nk/2));
+      bn = (b0 + (0.5 * arma::accu(arma::pow(yk - mu[cc], 2.0))));
+      mun = (((s20 * arma::accu(yk)) + (mu0 * s2[cc]))/((nk * s20) + s2[cc]));
+      s2n = ((s2[cc] * s20)/((nk * s20) + s2[cc]));
+    }
+    
+    // Update mu and s2
+    mu.row(cc).fill(R::rnorm(mun, std::sqrt(s2n)));
+    s2.row(cc).fill(1/(R::rgamma(an, (1/bn))));
+  }
+  
+  result["assign"] = ci_init;
+  result["new_mu"] = mu;
+  result["new_s2"] = s2;
+  
   return result;
   
+}
+
+// [[Rcpp::export]]
+double log_inv_gamma(double s2_k, double a0, double b0){
+  
+  /* Description: This is a function calculate the density of the inverse gamma 
+   *              distribution in a log scale. 
+   */
+
+  double result = 0.0;
+  result += (a0 * std::log(b0));
+  result -= std::lgamma(a0);
+  result += ((-a0 - 1) * std::log(s2_k));
+  result -= (b0/s2_k);
+  
+  return result;
+  
+}
+
+// [[Rcpp::export]]
+double log_cluster_prior(arma::vec ci, double xi0){
+  
+  /* Description: NA
+   */
+  
+  double result = 0.0;
+  double xi_total = 0.0;
+  
+  arma::vec active_clus = arma::unique(ci);
+  
+  for(int k = 0; k < active_clus.size(); ++k){
+    int cc = active_clus[k];
+    arma::uvec nk_vec = arma::find(ci == cc);
+    result += std::lgamma(nk_vec.size() + xi0);
+    result -= std::lgamma(xi0);
+    xi_total += xi0;
+  }
+  
+  result += std::lgamma(xi_total);
+  result -= std::lgamma(ci.size() + xi_total);
+  
+  return result;
+}
+
+// [[Rcpp::export]]
+double log_proposal(arma::vec y, arma::vec ci_after, arma::vec ci_before, 
+                    arma::vec sm_clus, arma::vec mu_before, 
+                    arma::vec s2_before, arma::uvec S){
+  
+  /* Description: NA
+   */
+  
+  double result = 0.0;
+  unsigned int K_pos = sm_clus.size();
+  
+  std::cout << "Begin: calculate the proposal" << std::endl;
+  
+  // Update the cluster assignment
+  for(int i = 0; i < S.size(); ++i){
+  
+    int s = S[i];
+    
+    std::cout << "observation: " << s << std::endl;
+    
+    double yi = y[s];
+    arma::vec c_not_i(ci_before);
+    c_not_i.shed_row(s);
+    
+    arma::vec log_realloc(K_pos, arma::fill::value(0.0));
+    for(int k = 0; k < K_pos; ++k){
+      int cc = sm_clus[k];
+      arma::uvec nk_vec = arma::find(c_not_i == cc);
+      log_realloc.row(k).fill(std::log(nk_vec.size()) + R::dnorm4(yi, mu_before[cc], std::sqrt(s2_before[cc]), 1));
+      }
+    
+    arma::vec alloc_prob = log_sum_exp(log_realloc);
+    
+    std::cout << "alloc_prob: " << alloc_prob << std::endl;
+    
+    arma::uvec restricted_index = arma::find(sm_clus == ci_after[s]);
+    result += std::log(alloc_prob[sm_clus[restricted_index[0]]]);
+    
+    std::cout << "-------------------" << std::endl;
+    
+    ci_before.row(s).fill(ci_after[s]);
+
+  }
+  
+  std::cout << "assign: (adjusted before & after): " << arma::join_horiz(ci_before, ci_after) << std::endl;
+  
+  return result;
+
 }
 
 // Finite Mixture Model: -------------------------------------------------------
@@ -274,16 +363,7 @@ Rcpp::List SFDMM_realloc(arma::vec y, unsigned int K_max, double a0, double b0,
     for(int k = 0; k < K_pos; ++k){
       int cc = clus_active[k];
       arma::uvec nk_vec = arma::find(c_not_i == cc);
-      double l_re = std::log(nk_vec.size() + xi0);
-      
-      if(nk_vec.size() == 0){
-        l_re += log_marginal(yi, mu0, s20, a0, b0, mu[cc], s2[cc]);
-      } else {
-        l_re += R::dnorm4(yi, mu[cc], std::sqrt(s2[cc]), 1);
-      }
-      
-      log_realloc.row(k).fill(l_re);
-      
+      log_realloc.row(k).fill(std::log(nk_vec.size() + xi0) + R::dnorm4(yi, mu[cc], std::sqrt(s2[cc]), 1));
     }
     
     Rcpp::NumericVector realloc_prob = Rcpp::as<Rcpp::NumericVector>(Rcpp::wrap(log_sum_exp(log_realloc)));
@@ -409,15 +489,88 @@ Rcpp::List SFDMM_SM(arma::vec y, unsigned int K_max, double a0, double b0,
   arma::vec init_ind = arma::randu(S.size(), arma::distr_param(0, 1));
   launch_assign.rows(S) = samp_clus.rows(arma::conv_to<arma::uvec>::from(init_ind > 0.5));
   
-  std::cout << "split/merge: " << split_ind << std::endl;
-  std::cout << "samp_obs: " << samp_obs << std::endl;
-  std::cout << "samp_clus" << samp_clus << std::endl;
-  std::cout << "assign: " << arma::join_horiz(ci_init, launch_assign) << std::endl; 
-  std::cout << "alpha: " << arma::join_horiz(alpha_init, launch_alpha) << std::endl; 
-  std::cout << "mu: " << arma::join_horiz(mu_init, launch_mu) << std::endl; 
-  std::cout << "s2: " << arma::join_horiz(s2_init, launch_s2) << std::endl; 
+  Rcpp::List launch_product;
   
+  for(int t = 0; t < launch_iter; ++t){
+    launch_product = SFDMM_rGibbs(y, samp_clus, launch_assign, launch_mu, 
+                                  launch_s2, S, a0, b0, mu0, s20);
+    arma::vec l_assign = launch_product["assign"];
+    arma::vec l_mu = launch_product["new_mu"];
+    arma::vec l_s2 = launch_product["new_s2"];
+    
+    launch_assign = l_assign;
+    launch_mu = l_mu;
+    launch_s2 = l_s2;
+  }
+  
+  // Split-Merge step
+  arma::vec proposed_assign(launch_assign);
+  arma::vec proposed_alpha(launch_alpha);
+  arma::vec proposed_mu(launch_mu);
+  arma::vec proposed_s2(launch_s2);
+  Rcpp::List proposed_product;
+  
+  if(split_ind == 1){
+    proposed_product = SFDMM_rGibbs(y, samp_clus, proposed_assign, launch_mu, 
+                                    launch_s2, S, a0, b0, mu0, s20);
+    arma::vec p_assign = proposed_product["assign"];
+    arma::vec p_mu = proposed_product["new_mu"];
+    arma::vec p_s2 = proposed_product["new_s2"];
+    
+    proposed_assign = p_assign;
+    proposed_mu = p_mu;
+    proposed_s2 = p_s2;
+    
+  } else {
+    // Merge: All observations in S and {ci, cj} will be allocated to cj
+    proposed_assign.rows(S).fill(samp_clus[1]);
+    proposed_assign.rows(samp_obs).fill(samp_clus[1]);
+  }
+  
+  // Proposal Probability
+  // Data
+  for(int i = 0; i < y.size(); ++i){
+    log_A += R::dnorm4(y[i], proposed_mu[proposed_assign[i]], std::sqrt(proposed_s2[proposed_assign[i]]), 1);
+    log_A -= R::dnorm4(y[i], mu_init[ci_init[i]], std::sqrt(s2_init[ci_init[i]]), 1);
+  }
+  
+  arma::vec norm_init_alpha = arma::normalise(alpha_init, 1);
+  arma::vec norm_launch_alpha = arma::normalise(launch_alpha, 1); 
+  
+  for(int k = 0; k < K_max; ++k){
+    // mu
+    log_A += R::dnorm4(proposed_mu[k], mu0, std::sqrt(s20), 1);
+    log_A -= R::dnorm4(mu_init[k], mu0, std::sqrt(s20), 1);
+    
+    // s2
+    log_A += log_inv_gamma(proposed_s2[k], a0, b0);
+    log_A -= log_inv_gamma(s2_init[k], a0, b0);
+  }
+  
+  log_A += log_cluster_prior(launch_assign, xi0);
+  log_A -= log_cluster_prior(ci_init, xi0);
+  
+  log_A += (((2 * split_ind) - 1) * (std::log(a_theta) - std::log(b_theta)));
+  
+  // Proposal
+  if(split_ind == 1){ // split
+    std::cout << "q(launch|prop): " << log_proposal(y, launch_assign, proposed_assign, 
+                                    samp_clus, proposed_mu, proposed_s2, S) << std::endl;
+    
+    std::cout << "q(prop|launch): " << log_proposal(y, proposed_assign, launch_assign, 
+                                    samp_clus, launch_mu, launch_s2, S) << std::endl;
+  }
+  
+  std::cout << "split/merge: " << split_ind << std::endl;
+  // std::cout << "samp_obs: " << samp_obs << std::endl;
+  // std::cout << "samp_clus" << samp_clus << std::endl;
+  std::cout << "assign: " << arma::join_horiz(ci_init, launch_assign, proposed_assign) << std::endl; 
+  std::cout << "mu: " << arma::join_horiz(mu_init, launch_mu, proposed_mu) << std::endl; 
+  std::cout << "s2: " << arma::join_horiz(s2_init, launch_s2, proposed_s2) << std::endl; 
+  // 
   result["split_ind"] = split_ind;
+  result["log_A"] = log_A;
+  
   return result;
   
 }
