@@ -30,27 +30,21 @@ dinvgamma(1, 1, 1, log = TRUE)
 log_inv_gamma(1, 1, 1)
 
 set.seed(31807)
-ci_true <- rep(1:5, 2)
-dat <- rnorm(10, c(0, 7.5, 15, 25, 35)[ci_true], 1)
+ci_true <- rep(1:5, 100)
+dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true], 1)
 ci_init <- rep(c(2, 3), 250)
 mu_init <- rnorm(5, 0, sqrt(100))
 s2_init <- 1/rgamma(5, 1, 1)
 alpha_init <- rgamma(5, 1 ,1)
 
-set.seed(214)
-test_vec <- SFDMM_rGibbs(dat, c(0, 1), c(1, rep(0, 9)), c(-5, -3, 1, 1, 1), c(1, 1, 1, 1, 1), 2:9, 
-                         1, 1, 0, 100)$assign
-log_proposal(dat, test_vec, c(1, rep(0, 9)), c(0, 1), c(-5, -3, 1, 1, 1), c(1, 1, 1, 1, 1), 2:9)
+result <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                   ci_init = rep(1:5, 100) - 1, mu = mu_init, s2 = s2_init, 
+                   alpha_init = c(rgamma(5, 1, 1), rep(0, 0)), launch_iter = 10, 
+                   a_theta = 1, b_theta = 1)
+result$accept_proposed
+result$new_mu
 
-set.seed(2144)
-sm_vec <- rep(NA, 10000)
-for(i in 1:10000){
-  sm_vec[i] <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
-           ci_init = rep(0, 10), mu = mu_init, s2 = s2_init, 
-           alpha_init = c(rgamma(1, 1, 1), rep(0, 4)), launch_iter = 10, 
-           a_theta = 1, b_theta = 1)$log_A
-}
-sm_vec
+sum(is.infinite(sm_vec))
 
 log(dnorm(dat[3], 15.1306, sqrt(3.8145e+02)))
 
@@ -103,9 +97,15 @@ mean(sp > 0)
 mean(dat)
 var(dat)
 
+set.seed(31807)
+ci_true <- rep(1:5, 10)
+dat <- rnorm(50, c(0, 7.5, 15, 25, 35)[ci_true], 1)
+mu_init <- rnorm(5, 0, sqrt(100))
+s2_init <- 1/rgamma(5, 1, 1)
+
 test_result <- fmm_rcpp(iter = 10000, y = dat, K_max = 5, 
                         a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
-                        ci_init = rep(1, 500))
+                        ci_init = rep(1, 50))
 
 table(salso(test_result$assign_mat[-c(1:7500), ], maxNClusters = 5), ci_true)
 plot(test_result$mu[-c(1:7500), 5], type = "l")
