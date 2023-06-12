@@ -42,12 +42,20 @@ test_vec <- SFDMM_rGibbs(dat, c(0, 1), c(1, rep(0, 9)), c(-5, -3, 1, 1, 1), c(1,
                          1, 1, 0, 100)$assign
 log_proposal(dat, test_vec, c(1, rep(0, 9)), c(0, 1), c(-5, -3, 1, 1, 1), c(1, 1, 1, 1, 1), 2:9)
 
+set.seed(2144)
+sm_vec <- rep(NA, 10000)
+for(i in 1:10000){
+  sm_vec[i] <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+           ci_init = rep(0, 10), mu = mu_init, s2 = s2_init, 
+           alpha_init = c(rgamma(1, 1, 1), rep(0, 4)), launch_iter = 10, 
+           a_theta = 1, b_theta = 1)$log_A
+}
+sm_vec
 
-SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
-         ci_init = rep(0, 10), mu = mu_init, s2 = s2_init, 
-         alpha_init = c(rgamma(1, 1, 1), rep(0, 4)), launch_iter = 10, 
-         a_theta = 1, b_theta = 1)
+log(dnorm(dat[3], 15.1306, sqrt(3.8145e+02)))
 
+hist(sm_vec)
+mean(is.infinite(sm_vec) * 100000)
 
 sort(c((1:10 * 5) - 4, (1:10 * 5) - 3)) - 1
 data.frame(mu_init, s2_init, alpha_init)
