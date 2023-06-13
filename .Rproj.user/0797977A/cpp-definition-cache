@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-        "file_last_write": 1686588990.0,
+        "file_last_write": 1686675884.0,
         "definitions": [
             {
                 "usr": "c:@F@log_sum_exp#$@N@arma@S@Col>#d#",
@@ -49,7 +49,17 @@
                 "parent_name": "",
                 "name": "log_inv_gamma(double, double, double)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 148,
+                "line": 141,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@log_param_prior#$@N@arma@S@Col>#d#S0_#S0_#d#d#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "log_param_prior(arma::vec, arma::vec, arma::vec, double, double, double, double)",
+                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
+                "line": 158,
                 "column": 8,
                 "hidden": false
             },
@@ -59,7 +69,7 @@
                 "parent_name": "",
                 "name": "log_cluster_prior(arma::vec, double)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 165,
+                "line": 178,
                 "column": 8,
                 "hidden": false
             },
@@ -69,7 +79,7 @@
                 "parent_name": "",
                 "name": "log_proposal(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::uvec)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 190,
+                "line": 203,
                 "column": 8,
                 "hidden": false
             },
@@ -79,7 +89,7 @@
                 "parent_name": "",
                 "name": "fmm_rcpp(int, arma::vec, unsigned int, double, double, double, double, double, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 243,
+                "line": 242,
                 "column": 12,
                 "hidden": false
             },
@@ -89,7 +99,7 @@
                 "parent_name": "",
                 "name": "SFDMM_realloc(arma::vec, unsigned int, double, double, double, double, double, arma::vec, arma::vec, arma::vec, arma::vec)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 348,
+                "line": 347,
                 "column": 12,
                 "hidden": false
             },
@@ -99,124 +109,27 @@
                 "parent_name": "",
                 "name": "SFDMM_SM(arma::vec, unsigned int, double, double, double, double, double, arma::vec, arma::vec, arma::vec, arma::vec, int, double, double)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 439,
-                "column": 12,
-                "hidden": false
-            }
-        ],
-        "hidden": false
-    },
-    {
-        "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-        "file_last_write": 1686594456.0,
-        "definitions": [
-            {
-                "usr": "c:@F@log_sum_exp#$@N@arma@S@Col>#d#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "log_sum_exp(arma::vec)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 15,
-                "column": 11,
-                "hidden": false
-            },
-            {
-                "usr": "c:@F@rmultinom_1#&$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#&i#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "rmultinom_1(Rcpp::NumericVector &, unsigned int &)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 44,
-                "column": 21,
-                "hidden": false
-            },
-            {
-                "usr": "c:@F@adjust_alpha#I#$@N@arma@S@Col>#d#S0_#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "adjust_alpha(int, arma::vec, arma::vec)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 56,
-                "column": 11,
-                "hidden": false
-            },
-            {
-                "usr": "c:@F@SFDMM_rGibbs#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#$@N@arma@S@Col>#i#d#d#d#d#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "SFDMM_rGibbs(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::uvec, double, double, double, double)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 71,
+                "line": 433,
                 "column": 12,
                 "hidden": false
             },
             {
-                "usr": "c:@F@log_inv_gamma#d#d#d#",
+                "usr": "c:@F@SFDMM_param#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#d#i#d#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "log_inv_gamma(double, double, double)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 153,
-                "column": 8,
-                "hidden": false
-            },
-            {
-                "usr": "c:@F@log_cluster_prior#$@N@arma@S@Col>#d#d#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "log_cluster_prior(arma::vec, double)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 170,
-                "column": 8,
-                "hidden": false
-            },
-            {
-                "usr": "c:@F@log_proposaltest#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#$@N@arma@S@Col>#i#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "log_proposaltest(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::uvec)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 195,
-                "column": 8,
-                "hidden": false
-            },
-            {
-                "usr": "c:@F@log_proposal#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#S0_#$@N@arma@S@Col>#i#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "log_proposal(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, arma::uvec)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 249,
-                "column": 8,
-                "hidden": false
-            },
-            {
-                "usr": "c:@F@fmm_rcpp#I#$@N@arma@S@Col>#d#i#d#d#d#d#d#S0_#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "fmm_rcpp(int, arma::vec, unsigned int, double, double, double, double, double, arma::vec)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 302,
+                "name": "SFDMM_param(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, unsigned int, double, double, double, double, double)",
+                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
+                "line": 589,
                 "column": 12,
                 "hidden": false
             },
             {
-                "usr": "c:@F@SFDMM_realloc#$@N@arma@S@Col>#d#i#d#d#d#d#d#S0_#S0_#S0_#S0_#",
+                "usr": "c:@F@SFDMM_model#I#i#$@N@arma@S@Col>#d#S0_#d#d#d#d#d#d#d#I#I#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "SFDMM_realloc(arma::vec, unsigned int, double, double, double, double, double, arma::vec, arma::vec, arma::vec, arma::vec)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 407,
-                "column": 12,
-                "hidden": false
-            },
-            {
-                "usr": "c:@F@SFDMM_SMtest#$@N@arma@S@Col>#d#i#d#d#d#d#d#S0_#S0_#S0_#S0_#I#d#d#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "SFDMM_SMtest(arma::vec, unsigned int, double, double, double, double, double, arma::vec, arma::vec, arma::vec, arma::vec, int, double, double)",
-                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/maintest.cpp",
-                "line": 498,
+                "name": "SFDMM_model(int, unsigned int, arma::vec, arma::vec, double, double, double, double, double, double, double, int, int)",
+                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
+                "line": 661,
                 "column": 12,
                 "hidden": false
             }

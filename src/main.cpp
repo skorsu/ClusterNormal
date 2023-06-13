@@ -155,6 +155,26 @@ double log_inv_gamma(double s2_k, double a0, double b0){
 }
 
 // [[Rcpp::export]]
+double log_param_prior(arma::vec ci, arma::vec mu, arma::vec s2, double a0, 
+                       double b0, double mu0, double s20){
+  
+  /* Description: NA
+   */
+  
+  double result = 0.0;
+  arma::vec active_clus = arma::unique(ci);
+  
+  for(int k = 0; k < active_clus.size(); ++k){
+    int cc = active_clus[k];
+    result += R::dnorm4(mu[cc], mu0, std::sqrt(s20), 1); // mu
+    result += log_inv_gamma(s2[cc], a0, b0); // s2
+  }
+  
+  return result;
+  
+}
+
+// [[Rcpp::export]]
 double log_cluster_prior(arma::vec ci, double xi0){
   
   /* Description: NA
@@ -354,6 +374,7 @@ Rcpp::List SFDMM_realloc(arma::vec y, unsigned int K_max, double a0, double b0,
     }
     
     Rcpp::NumericVector realloc_prob = Rcpp::as<Rcpp::NumericVector>(Rcpp::wrap(log_sum_exp(log_realloc)));
+    
     Rcpp::IntegerVector ind_vec = rmultinom_1(realloc_prob, K_pos);
     arma::vec ind_arma = Rcpp::as<arma::vec>(Rcpp::wrap(ind_vec));
     arma::uword new_assign_i = arma::index_max(ind_arma);
@@ -365,35 +386,27 @@ Rcpp::List SFDMM_realloc(arma::vec y, unsigned int K_max, double a0, double b0,
   for(int k = 0; k < K_pos; ++k){
     int cc = clus_active[k];
     arma::uvec nk_vec = arma::find(ci_init == cc);
-    
     double nk = nk_vec.size();
-    double an = 0.0;
-    double bn = 0.0;
-    double mun = 0.0;
-    double s2n = 0.0;
-    
+
     if(nk == 0){
-      an = a0;
-      bn = b0;
-      mun = mu0;
-      s2n = s20;
+      mu.row(cc).fill(0.0);
+      s2.row(cc).fill(0.0);
     } else {
       arma::vec yk = y.rows(nk_vec);
-      an = (a0 + (nk/2));
-      bn = (b0 + (0.5 * arma::accu(arma::pow(yk - mu[cc], 2.0))));
-      mun = (((s20 * arma::accu(yk)) + (mu0 * s2[cc]))/((nk * s20) + s2[cc]));
-      s2n = ((s2[cc] * s20)/((nk * s20) + s2[cc]));
+      double an = (a0 + (nk/2));
+      double bn = (b0 + (0.5 * arma::accu(arma::pow(yk - mu[cc], 2.0))));
+      double mun = (((s20 * arma::accu(yk)) + (mu0 * s2[cc]))/((nk * s20) + s2[cc]));
+      double s2n = ((s2[cc] * s20)/((nk * s20) + s2[cc]));
+      mu.row(cc).fill(R::rnorm(mun, std::sqrt(s2n)));
+      s2.row(cc).fill(1/(R::rgamma(an, (1/bn))));
     }
-    
-    mu.row(cc).fill(R::rnorm(mun, std::sqrt(s2n)));
-    s2.row(cc).fill(1/(R::rgamma(an, (1/bn))));
   }
   
   // Update the alpha vector
   alpha_vec = adjust_alpha(K_max, ci_init, alpha_vec);
   
   // Relabel: Label Switching protection
-  arma::uvec mu_sort_order = arma::sort_index(mu);
+  arma::uvec mu_sort_order = arma::sort_index(mu, "descend");
   mu = mu.rows(mu_sort_order);
   s2 = s2.rows(mu_sort_order);
   alpha_vec = alpha_vec.rows(mu_sort_order);
@@ -521,22 +534,15 @@ Rcpp::List SFDMM_SM(arma::vec y, unsigned int K_max, double a0, double b0,
     log_A -= R::dnorm4(y[i], mu_init[ci_init[i]], std::sqrt(s2_init[ci_init[i]]), 1);
   }
   
-  arma::vec norm_init_alpha = arma::normalise(alpha_init, 1);
-  arma::vec norm_launch_alpha = arma::normalise(launch_alpha, 1); 
+  // Cluster parameters: mu and s2
+  log_A += log_param_prior(proposed_assign, proposed_mu, proposed_s2, a0, b0, mu0, s20);
+  log_A -= log_param_prior(ci_init, mu_init, s2_init, a0, b0, mu0, s20);
   
-  for(int k = 0; k < K_max; ++k){
-    // mu
-    log_A += R::dnorm4(proposed_mu[k], mu0, std::sqrt(s20), 1);
-    log_A -= R::dnorm4(mu_init[k], mu0, std::sqrt(s20), 1);
-    
-    // s2
-    log_A += log_inv_gamma(proposed_s2[k], a0, b0);
-    log_A -= log_inv_gamma(s2_init[k], a0, b0);
-  }
-  
+  // Cluster prior
   log_A += log_cluster_prior(launch_assign, xi0);
   log_A -= log_cluster_prior(ci_init, xi0);
   
+  // Spike-and-slab
   log_A += (((2 * split_ind) - 1) * (std::log(a_theta) - std::log(b_theta)));
   
   // Proposal
@@ -608,31 +614,24 @@ Rcpp::List SFDMM_param(arma::vec clus_assign, arma::vec y, arma::vec mu, arma::v
     arma::uvec nk_vec = arma::find(clus_assign == k);
     
     double nk = nk_vec.size();
-    double an = 0.0;
-    double bn = 0.0;
-    double mun = 0.0;
-    double s2n = 0.0;
-    
     if(nk == 0){
-      an = a0;
-      bn = b0;
-      mun = mu0;
-      s2n = s20;
+      mu.row(k).fill(0.0);
+      s2.row(k).fill(0.0);
     } else {
       arma::vec yk = y.rows(nk_vec);
-      an = (a0 + (nk/2));
-      bn = (b0 + (0.5 * arma::accu(arma::pow(yk - mu[k], 2.0))));
-      mun = (((s20 * arma::accu(yk)) + (mu0 * s2[k]))/((nk * s20) + s2[k]));
-      s2n = ((s2[k] * s20)/((nk * s20) + s2[k]));
+      
+      double an = (a0 + (nk/2));
+      double bn = (b0 + (0.5 * arma::accu(arma::pow(yk - mu[k], 2.0))));
+      double mun = (((s20 * arma::accu(yk)) + (mu0 * s2[k]))/((nk * s20) + s2[k]));
+      double s2n = ((s2[k] * s20)/((nk * s20) + s2[k]));
+      
+      mu.row(k).fill(R::rnorm(mun, std::sqrt(s2n)));
+      s2.row(k).fill(1/(R::rgamma(an, (1/bn))));
     }
-    
-    mu.row(k).fill(R::rnorm(mun, std::sqrt(s2n)));
-    s2.row(k).fill(1/(R::rgamma(an, (1/bn))));
-    
   }
   
   // Relabel: Label Switching protection
-  arma::uvec mu_sort_order = arma::sort_index(mu);
+  arma::uvec mu_sort_order = arma::sort_index(mu, "descend");
   mu = mu.rows(mu_sort_order);
   s2 = s2.rows(mu_sort_order);
   alpha_vec = alpha_vec.rows(mu_sort_order);
@@ -671,19 +670,17 @@ Rcpp::List SFDMM_model(int iter, unsigned int K_max, arma::vec init_assign,
   // Initial alpha
   arma::uvec init_unique = arma::conv_to<arma::uvec>::from(arma::unique(init_assign));
   arma::vec init_alpha(K_max, arma::fill::zeros);
+  arma::vec mu(K_max, arma::fill::value(0.0));
+  arma::vec s2(K_max, arma::fill::value(0.0));
 
   for(int k = 0; k < init_unique.size(); ++k){
     init_alpha.row(init_unique[k]).fill(R::rgamma(xi0, 1.0));
+    mu.row(init_unique[k]).fill(R::rnorm(mu0, std::sqrt(s20)));
+    s2.row(init_unique[k]).fill(1/(R::rgamma(a0, 1/b0)));
   }
   
   // Initial U (auxiliary variable)
   double init_u = R::rgamma(y.size(), 1/(arma::accu(init_alpha)));
-  
-  // Initial mu and s2
-  arma::vec mu(K_max, arma::fill::value(0.0));
-  arma::vec s2(K_max, arma::fill::value(0.0));
-  mu = arma::randn(K_max, arma::distr_param(mu0, std::sqrt(s20)));
-  s2 = 1/(arma::randg(K_max, arma::distr_param(a0, (1/b0))));
   
   // Create vectors/matrices for storing the final result
   arma::mat iter_assign(y.size(), iter, arma::fill::value(-1));
