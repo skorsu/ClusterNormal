@@ -6,6 +6,7 @@ library(LaplacesDemon)
 library(mvtnorm)
 library(tidyverse)
 library(DirichletReg)
+library(invgamma)
 library(salso)
 library(rootSolve)
 library(metRology)
@@ -22,6 +23,147 @@ install()
 library(ClusterNormal)
 
 ### Sandbox: -------------------------------------------------------------------
+
+log(dnorm(1:100, 0, sqrt(100)))
+log(dinvgamma(1:100, 1, 1))
+dinvgamma(1, 1, 1, log = TRUE)
+log_inv_gamma(1, 1, 1)
+
+set.seed(31807)
+ci_true <- rep(1:5, 100)
+dat <- rnorm(500, c(0, 7.5, 15, 25, 35)[ci_true], 1)
+ci_init <- rep(c(2, 3), 250)
+mu_init <- rnorm(5, 0, sqrt(100))
+s2_init <- 1/rgamma(5, 1, 1)
+alpha_init <- rgamma(5, 1 ,1)
+
+result <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                   ci_init = rep(1:5, 100) - 1, mu = mu_init, s2 = s2_init, 
+                   alpha_init = c(rgamma(5, 1, 1), rep(0, 0)), launch_iter = 10, 
+                   a_theta = 1, b_theta = 1)
+result$accept_proposed
+result$new_mu
+
+sum(is.infinite(sm_vec))
+
+log(dnorm(dat[3], 15.1306, sqrt(3.8145e+02)))
+
+hist(sm_vec)
+mean(is.infinite(sm_vec) * 100000)
+
+sort(c((1:10 * 5) - 4, (1:10 * 5) - 3)) - 1
+data.frame(mu_init, s2_init, alpha_init)
+
+apply(data.frame(s2_init), 1, dinvgamma, shape = 1, rate = 1, log = TRUE)
+apply(data.frame(s2_init), 1, log_inv_gamma, a0 = 1, b0 = 1)
+
+ggplot(data.frame(x = ci_true, y = dat), aes(x = y, fill = factor(x))) +
+  geom_histogram(bins = 20) +
+  theme_bw()
+
+test <- SFDMM_realloc(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                      ci_init = rep(c(2, 3), 25), mu = mu_init, s2 = s2_init, 
+                      alpha_vec = alpha_init)
+data.frame(test$new_mu, test$new_s2, test$new_alpha)
+
+la <- rep(NA, 10000)
+for(k in 1:10000){
+la[k] <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                  ci_init = rep(0, 500), mu = mu_init, s2 = s2_init, 
+                  alpha_init = c(rgamma(1, 1, 1), rep(0, 4)), launch_iter = 10, a_theta = 1, b_theta = 1)$log_A
+}
+hist(la)
+exp(la)
+mean(la < 0)
+table(ci_true, test$new_ci)
+
+beta(1, 1)
+lbeta(5, 9)
+log(gamma(5) * gamma(9) / gamma(14))
+SFDMM_rGibbs(dat, sm_clus = c(3, 4), a0 = 1, b0 = 1, 
+             mu0 = 0, s20 = 100, rep(3:4, 25), 
+             mu = mu_init, s2 = s2_init, 0:49)
+
+sp <- rep(NA, 1000)
+for(i in 1:1000){
+  sp[i] <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                    ci_init = ci_true - 1, mu = mu_init, s2 = s2_init, 
+                    alpha_init = alpha_init, launch_iter = 10, a_theta = 1, b_theta = 1)$log_A
+}
+
+hist(sp)
+mean(sp > 0)
+
+mean(dat)
+var(dat)
+
+set.seed(31807)
+ci_true <- rep(1:5, 10)
+dat <- rnorm(50, c(0, 7.5, 15, 25, 35)[ci_true], 1)
+mu_init <- rnorm(5, 0, sqrt(100))
+s2_init <- 1/rgamma(5, 1, 1)
+
+test_result <- fmm_rcpp(iter = 10000, y = dat, K_max = 5, 
+                        a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
+                        ci_init = rep(1, 50))
+
+table(salso(test_result$assign_mat[-c(1:7500), ], maxNClusters = 5), ci_true)
+plot(test_result$mu[-c(1:7500), 5], type = "l")
+
+data.frame(y = scale(dat), x = rep(1:5, 10)) %>%
+  group_by(x) %>%
+  summarise(mean(y), var(y))
+
+hist(test_result$mu[-c(1:7500), 4])
+apply(test_result$mu[-c(1:25000), ], 2, mean)
+apply(test_result$sigma2[-c(1:25000), ], 2, mean)
+
+plot(test_result$mu[-c(1:7500), 5], type = "l")
+
+hist(test_result$sigma2)
+hist(rnorm(10000, 0, sqrt(100)))
+qqplot(test_result$sigma2, 1/rgamma(10000, 1, 1))
+abline(0, 1)
+rm(list = ls())
+set.seed(1243)
+mu <- rnorm(1, 0, sqrt(1000))
+s2 <- 1/(rgamma(1, 1, 1))
+y <- rnorm(1, mu, sqrt(s2))
+log_marginal(y, mu0 = 0, s20 = 1000, a = 3, b = 4, mu, s2)
+  
+(-((y - mu)^2)/(2 * s2)) + (3.5 * log(4 + (0.5 * ((y - mu)^2)))) + ((y^2)/(2 * (s2 + 1000)))
+
+#### Storing the intermediate Result
+set.seed(3214)
+dat <- scale(dat, scale = FALSE)
+xin <- rep(0, K_max)
+mun <- rep(0, K_max)
+kn <- rep(0, K_max)
+nun <- rep(0, K_max)
+s2n <- rep(0, K_max)
+SS_vec <- rep(0, K_max)
+
+for(k in 1:3){
+  nk <- sum(ci_true == k)
+  ybar <- ifelse(nk > 0, mean(dat[ci_true == k]), 0)
+  SS_vec[k] <- ifelse(nk > 1, (nk - 1) * var(dat[ci_true == k]), 0)
+  kn[k] <- k0 + nk 
+  nun[k] <- nu0 + nk
+  mun[k] <- (k0*mu0 + nk*ybar)/kn[k]
+  s2n[k] <- (nu0*s20 + SS_vec[k] + k0*nk*(ybar-mu0)^2/kn[k])/(nun[k])
+  xin[k] <- xi0 + nk
+}
+
+mu_vec <- matrix(NA, nrow = 1000, ncol = 3)
+s2_vec <- matrix(NA, nrow = 1000, ncol = 3)
+
+for(i in 1:1000){
+  s2_vec[i, ] <- 1/(rgamma(K_max, nun/2, (nun * s2n)/2))
+  mu_vec[i, ] <- rnorm(K_max, mun, sqrt(s2_vec[i, ]/kn))
+}
+
+apply(s2_vec, 2, mean)
+
 
 rm(list = ls())
 elm <- list(result = matrix(NA, ncol = 3, nrow = 10), time = NA)

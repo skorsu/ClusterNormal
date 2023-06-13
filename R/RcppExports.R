@@ -5,60 +5,32 @@ log_sum_exp <- function(log_unnorm_prob) {
     .Call(`_ClusterNormal_log_sum_exp`, log_unnorm_prob)
 }
 
-log_marginal <- function(y, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
-    .Call(`_ClusterNormal_log_marginal`, y, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
+log_marginal <- function(yi, mu0, s20, a, b, mu, s2) {
+    .Call(`_ClusterNormal_log_marginal`, yi, mu0, s20, a, b, mu, s2)
 }
 
-log_posterior <- function(y_new, data, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
-    .Call(`_ClusterNormal_log_posterior`, y_new, data, ci, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
+rmultinom_1 <- function(probs, N) {
+    .Call(`_ClusterNormal_rmultinom_1`, probs, N)
 }
 
-rmultinom_1 <- function(unnorm_prob, N) {
-    .Call(`_ClusterNormal_rmultinom_1`, unnorm_prob, N)
+adjust_alpha <- function(K_max, clus_assign, alpha_vec) {
+    .Call(`_ClusterNormal_adjust_alpha`, K_max, clus_assign, alpha_vec)
 }
 
-fmm_iter <- function(K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster) {
-    .Call(`_ClusterNormal_fmm_iter`, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster)
+SFDMM_rGibbs <- function(y, sm_clus, a0, b0, mu0, s20, ci_init, mu, s2, S) {
+    .Call(`_ClusterNormal_SFDMM_rGibbs`, y, sm_clus, a0, b0, mu0, s20, ci_init, mu, s2, S)
 }
 
-fmm <- function(iter, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster) {
-    .Call(`_ClusterNormal_fmm`, iter, K, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster)
+fmm_rcpp <- function(iter, y, K_max, a0, b0, mu0, s20, xi0, ci_init) {
+    .Call(`_ClusterNormal_fmm_rcpp`, iter, y, K_max, a0, b0, mu0, s20, xi0, ci_init)
 }
 
-adjust_alpha <- function(cluster_assign, old_alpha) {
-    .Call(`_ClusterNormal_adjust_alpha`, cluster_assign, old_alpha)
+SFDMM_realloc <- function(y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu, s2, alpha_vec) {
+    .Call(`_ClusterNormal_SFDMM_realloc`, y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu, s2, alpha_vec)
 }
 
-split_launch <- function(old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, sm_cluster, S_index) {
-    .Call(`_ClusterNormal_split_launch`, old_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, sm_cluster, S_index)
-}
-
-log_likelihood <- function(clus_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster) {
-    .Call(`_ClusterNormal_log_likelihood`, clus_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster)
-}
-
-log_proposal <- function(c1, c2, y, xi_cluster, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, sm_cluster, S_index) {
-    .Call(`_ClusterNormal_log_proposal`, c1, c2, y, xi_cluster, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, sm_cluster, S_index)
-}
-
-log_prior_cluster <- function(cluster_assign, xi_cluster) {
-    .Call(`_ClusterNormal_log_prior_cluster`, cluster_assign, xi_cluster)
-}
-
-SFDM_realloc <- function(old_assign, y, alpha_vec, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster) {
-    .Call(`_ClusterNormal_SFDM_realloc`, old_assign, y, alpha_vec, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster)
-}
-
-SFDM_SM <- function(K, old_assign, y, alpha_vec, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster, launch_iter, a_theta, b_theta) {
-    .Call(`_ClusterNormal_SFDM_SM`, K, old_assign, y, alpha_vec, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster, launch_iter, a_theta, b_theta)
-}
-
-SFDM_alpha <- function(clus_assign, xi_cluster, alpha_vec, old_u) {
-    .Call(`_ClusterNormal_SFDM_alpha`, clus_assign, xi_cluster, alpha_vec, old_u)
-}
-
-SFDM_model <- function(iter, K, init_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster, a_theta, b_theta, launch_iter, print_iter) {
-    .Call(`_ClusterNormal_SFDM_model`, iter, K, init_assign, y, mu0_cluster, lambda_cluster, a_sigma_cluster, b_sigma_cluster, xi_cluster, a_theta, b_theta, launch_iter, print_iter)
+SFDMM_SM <- function(y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu_init, s2_init, alpha_init, launch_iter, a_theta, b_theta) {
+    .Call(`_ClusterNormal_SFDMM_SM`, y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu_init, s2_init, alpha_init, launch_iter, a_theta, b_theta)
 }
 
 rcpparma_hello_world <- function() {
