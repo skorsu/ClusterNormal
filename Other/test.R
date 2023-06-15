@@ -24,20 +24,30 @@ library(ClusterNormal)
 
 ### Sandbox: -------------------------------------------------------------------
 
-set.seed(31807)
-ci_true <- rep(1:5, 3)
-dat <- rnorm(5*3, c(0, 7.5, 15, 25, 35)[ci_true], 1)
-ci_init <- rep(c(0, 1, 0, 0, 0), 3)
-mu_init <- c(rnorm(2), rep(0, 3))
-s2_init <- c((1/rgamma(2, 1, 1)), rep(0, 3))
-alpha_init <- c(rgamma(2, 1 ,1), rep(0, 3))
+rm(list = ls())
+### Data Simulation: (1)
+set.seed(1843)
+N <- 500
+K <- 5
+ci_true <- sample(1:K, N, replace = TRUE)
+dat_sim <- rnorm(500, (c(0, 7.5, 15, 25, 35)[ci_true])/2, 1)
+ggplot(data.frame(x = dat_sim, ci_true), aes(x = x, fill = factor(ci_true))) +
+  geom_histogram(bins = 100) +
+  theme_bw()
 
-test <- SFDMM_SM(dat, K_max = 5, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, xi0 = 1, 
-                 ci_init = ci_init, mu_init = mu_init, s2_init = s2_init, 
-                 alpha_init = alpha_init, launch_iter = 10, 
-                 a_theta = 1, b_theta = 1)
 
-test$log_A
+start_time <- Sys.time()
+test_result <- SFDMM_model(iter = 10000, K_max = 10, init_assign = rep(0, 500),
+                           y = scale(dat_sim), a0 = 1, b0 = 1, mu0 = 0, s20 = 100,
+                           xi0 = 1, a_theta = 1, b_theta = 1, launch_iter = 10,
+                           print_iter = 2000)
+model_time <- Sys.time() - start_time
+
+table(salso(test_result$iter_assign[-(1:5000), ]), ci_true)
+
+
+
+
 
 rep_log_A <- rep(NA, 5000)
 for(i in 1:5000){
