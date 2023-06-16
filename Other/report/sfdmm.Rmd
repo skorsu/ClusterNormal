@@ -1,0 +1,331 @@
+---
+title: "Sparse Finite Discrete Mixture Model"
+output: pdf_document
+date: "2023-06-12"
+---
+
+```{r packages, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(mclustcomp)
+library(ClusterNormal)
+library(salso)
+
+library(foreach)
+library(doParallel)
+library(doRNG)
+```
+
+## Updated Note (6/13/2023)
+
+  - The code is in the main branch on Github.
+  - For the empty clusters, we will not sample $\mu_{k}$ and $\sigma_{k}^2$.
+  - Fix the constraint on $\mu$. I will set $\mu_{(1)} > \mu_{(2)} > \cdots > \mu_{(K_{max})}$ instead.
+  - Remove the trace plot for $\mu_{k}$ and $\sigma^{2}_{k}$. Instead, I have included the trace plot for the number of the active cluster.
+  - Include the another setting of analysis, the non-separated 5 cluster setting.
+
+## Note
+
+  - I will use the same datasets as in the previous reports. (FMM - R; 6/8/2023 and FMM - Rcpp; 6/10/2023)
+  - Based on the comment, I will run 10,000 iterations in total, but I will let the first 5,000 iterations as a burn-in.
+
+## Model
+
+The derivation for the posterior parameters is in `derive_fmm.jpeg`.
+
+$$\begin{aligned}
+Y_{i}|c_{i} = k, \mu, \sigma^{2} &\sim \text{N}\left(\mu_{k}, \sigma^{2}_{k} \right) \\
+\mu_{k} &\sim \text{N}\left(\mu_{0}, \sigma^{2}_{0}\right) \\
+\sigma^{2}_{k} &\sim \text{Inv-Gamma}\left(a_s, b_s \right) \\
+c_{i}|\alpha &\sim \text{Multinomial}\left(1, \frac{\alpha}{\sum_{k=1}^{K+}\alpha_{k}} \right) \\
+\alpha_{k}|\phi_{k} &\sim \phi_{k} \text{Gamma}\left(1, \xi_{i}\right) + \left(1 - \phi_{k}\right) \delta_{0} \\
+\phi_{k} &\sim \text{Ber}\left(\theta\right) \\
+\theta &\sim \text{Beta}\left(a_{\theta}, b_{\theta}\right)
+\end{aligned}$$
+
+## Hyperparameters
+
+  - According to the model, all clusters will have the same hyperparameters $\left(\mu_{0}, \sigma^{2}_{0}, a_{s}, b_{s} \right)$.
+  - To use the noninformative prior, I will let $\mu_{0} = 0$, $\sigma^{2}_{0} = 100$, $a_{s} = b_{s} = 1$. Also, I will let $\xi_{1} = \xi_{2} = \cdots = \xi_{K} = 1$.
+  - I have set $a_{\theta} = b_{\theta} = 1$.
+  - Also, I have set the maximum possible number of clusters $\left(\text{K}_{\text{max}}\right)$ to 10.
+  - The other model's setting is the number of the launch step. I have set it to 10.
+
+## Procedure
+
+  - In this model, we will have three steps: reallocation, split-merge and parameters update.
+  - Reallocation step: This is similar to the finite mixture model. The difference is that we will not allow the observations to go to the new cluster. We will reallocate them to the already existing clusters only. So, there will not create any new cluster in this step. The number of the active cluster will be the same or decrease only. At the end of this step, I will update $\mu$ and $\sigma^{2}$. Also, I perform the relabelling in this step to prevent the label-switching issue.
+  - SM: For the split-merge procedure, I will expand/collapse the cluster space via the split-merge algorithm. The algorithm is followed the restricted Gibbs Sampling Proposals From a Random Launch State (Section 3.2). In this step, I have updated the parameters for the cluster ($\mu$ and $\sigma^{2}$) at the end of every launch iteration.
+  - Parameters update: I update $\alpha$ (based on the Dirichlet Data Augmentation Trick document), $\mu$ and $\sigma^{2}$. Also, I perform the relabelling in this step to prevent the label-switching issue.
+
+## Analysis
+
+For each cases, I will run the model for the one simulated dataset only.
+
+### (1)
+
+This is the scenario that we discuss during the one of our meeting.
+
+```{r}
+rm(list = ls())
+
+### Data Simulation: (1)
+set.seed(1843)
+N <- 500
+K <- 3
+ci_true <- sample(1:K, N, replace = TRUE)
+dat_sim <- rnorm(N, c(10, 20, 30)[ci_true], 1)
+ggplot(data.frame(x = dat_sim, ci_true), aes(x = x, fill = factor(ci_true))) +
+  geom_histogram(bins = 100) +
+  theme_bw()
+```
+
+First, I will run the model for 10,000 iterations.
+
+```{r}
+start_time <- Sys.time()
+test_result <- SFDMM_model(iter = 10000, K_max = 10, init_assign = rep(0, 500), 
+                           y = dat_sim, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, 
+                           xi0 = 1, a_theta = 1, b_theta = 1, launch_iter = 10, 
+                           print_iter = 10000)
+model_time <- Sys.time() - start_time
+```
+
+```{r}
+model_time
+```
+
+The result looks perfect.
+
+```{r}
+table(salso(test_result$iter_assign[-c(1:7500), ], maxNClusters = 10), ci_true)
+```
+
+Consider the trace plot for the number of active cluster.
+
+```{r}
+n_active <- apply(test_result$iter_assign, 1, function(x){length(unique(x))})
+table(n_active)
+
+apply(test_result$iter_assign, 1, function(x){length(unique(x))}) %>%
+  plot(type = "l", ylim = c(1, 10))
+```
+
+Most of the time, the model detect that the number of active clusters is 3 or 4.
+
+```{r}
+c(mean(n_active), sd(n_active))
+```
+
+Then, I will look at the acceptance rate of the MH-algorithm in the split-merge.
+
+```{r}
+ac <- factor(test_result$sm_status)
+levels(ac) <- c("Reject", "Accept")
+sm <- factor(test_result$split_or_merge)
+levels(sm) <- c("Merge", "Split")
+table(ac, sm)
+```
+
+The acceptance rate is extremely low (80/10000 = 0.80%)
+
+### (2)
+
+For this case, we will have three (almost) separated clusters. The proportion for each group is 0.25, 0.35, and 0.4
+
+```{r}
+rm(list = ls())
+
+### Data Simulation: (2)
+set.seed(12441)
+N <- 500
+K <- 3
+ci_true <- sample(1:K, N, replace = TRUE, prob = c(0.25, 0.35, 0.4))
+dat_sim <- rnorm(N, c(7, 12, 17)[ci_true], 1)
+ggplot(data.frame(x = dat_sim, ci_true), aes(x = x, fill = factor(ci_true))) +
+  geom_histogram(bins = 100) +
+  theme_bw()
+```
+
+Then, I will run the model for 10,000 iterations.
+
+```{r}
+start_time <- Sys.time()
+test_result <- SFDMM_model(iter = 10000, K_max = 10, init_assign = rep(0, 500), 
+                           y = dat_sim, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, 
+                           xi0 = 1, a_theta = 1, b_theta = 1, launch_iter = 10, 
+                           print_iter = 10000)
+model_time <- Sys.time() - start_time
+```
+
+```{r}
+model_time
+```
+
+```{r}
+table(salso(test_result$iter_assign[-c(1:7500), ], maxNClusters = 10), ci_true)
+```
+
+Consider the trace plot for the number of active cluster.
+
+```{r}
+n_active <- apply(test_result$iter_assign, 1, function(x){length(unique(x))})
+table(n_active)
+
+apply(test_result$iter_assign, 1, function(x){length(unique(x))}) %>%
+  plot(type = "l", ylim = c(1, 10))
+```
+
+Most of the time, the model detect that the number of active clusters is 3, 4 or 5.
+
+```{r}
+c(mean(n_active), sd(n_active))
+```
+
+Then, I will look at the acceptance rate of the MH-algorithm in the split-merge.
+
+```{r}
+ac <- factor(test_result$sm_status)
+levels(ac) <- c("Reject", "Accept")
+sm <- factor(test_result$split_or_merge)
+levels(sm) <- c("Merge", "Split")
+table(ac, sm)
+```
+
+The acceptance rate is extremely low (91/10000 = 0.91%)
+
+### (3)
+
+For this case, we will have five separated clusters. 
+
+```{r}
+rm(list = ls())
+
+### Data Simulation: (3)
+set.seed(12441)
+N <- 500
+K <- 5
+ci_true <- sample(1:K, N, replace = TRUE)
+dat_sim <- rnorm(N, c(0, 7.5, 15, 25, 35)[ci_true], 1)
+ggplot(data.frame(x = dat_sim, ci_true), aes(x = x, fill = factor(ci_true))) +
+  geom_histogram(bins = 100) +
+  theme_bw()
+```
+
+I will run the model for 10,000 iterations.
+
+```{r}
+start_time <- Sys.time()
+test_result <- SFDMM_model(iter = 10000, K_max = 10, init_assign = rep(0, 500), 
+                           y = dat_sim, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, 
+                           xi0 = 1, a_theta = 1, b_theta = 1, launch_iter = 10, 
+                           print_iter = 10000)
+model_time <- Sys.time() - start_time
+```
+
+```{r}
+model_time
+```
+
+The result looks perfect.
+
+```{r}
+table(salso(test_result$iter_assign[-c(1:7500), ], maxNClusters = 10), ci_true)
+```
+
+Consider the trace plot for the number of active cluster.
+
+```{r}
+n_active <- apply(test_result$iter_assign, 1, function(x){length(unique(x))})
+table(n_active)
+
+apply(test_result$iter_assign, 1, function(x){length(unique(x))}) %>%
+  plot(type = "l", ylim = c(1, 10))
+```
+
+Most of the time, the model detect that the number of active clusters is 5.
+
+```{r}
+c(mean(n_active), sd(n_active))
+```
+
+Then, I will look at the acceptance rate of the MH-algorithm in the split-merge.
+
+```{r}
+ac <- factor(test_result$sm_status)
+levels(ac) <- c("Reject", "Accept")
+sm <- factor(test_result$split_or_merge)
+levels(sm) <- c("Merge", "Split")
+table(ac, sm)
+```
+
+The acceptance rate is extremely low (53/10000 = 0.53%)
+
+### (4)
+
+For this case, we will have five non-separated clusters. 
+
+```{r}
+rm(list = ls())
+
+### Data Simulation: (4)
+set.seed(12441)
+N <- 500
+K <- 5
+ci_true <- sample(1:K, N, replace = TRUE)
+dat_sim <- rnorm(N, (c(0, 7.5, 15, 25, 35)[ci_true])/2, 1)
+ggplot(data.frame(x = dat_sim, ci_true), aes(x = x, fill = factor(ci_true))) +
+  geom_histogram(bins = 100) +
+  theme_bw()
+```
+
+I will run the model for 10,000 iterations.
+
+```{r}
+start_time <- Sys.time()
+test_result <- SFDMM_model(iter = 10000, K_max = 10, init_assign = rep(0, 500), 
+                           y = dat_sim, a0 = 1, b0 = 1, mu0 = 0, s20 = 100, 
+                           xi0 = 1, a_theta = 1, b_theta = 1, launch_iter = 10, 
+                           print_iter = 10000)
+model_time <- Sys.time() - start_time
+```
+
+```{r}
+model_time
+```
+
+The result looks good.
+
+```{r}
+table(salso(test_result$iter_assign[-c(1:7500), ], maxNClusters = 10), ci_true)
+```
+
+Consider the trace plot for the number of active cluster.
+
+```{r}
+n_active <- apply(test_result$iter_assign, 1, function(x){length(unique(x))})
+table(n_active)
+
+apply(test_result$iter_assign, 1, function(x){length(unique(x))}) %>%
+  plot(type = "l", ylim = c(1, 10))
+```
+
+Most of the time, the model detect that the number of active clusters is 5 or 6.
+
+```{r}
+c(mean(n_active), sd(n_active))
+```
+
+Then, I will look at the acceptance rate of the MH-algorithm in the split-merge.
+
+```{r}
+ac <- factor(test_result$sm_status)
+levels(ac) <- c("Reject", "Accept")
+sm <- factor(test_result$split_or_merge)
+levels(sm) <- c("Merge", "Split")
+table(ac, sm)
+```
+
+The acceptance rate is extremely low (50/10000 = 0.50%)
+

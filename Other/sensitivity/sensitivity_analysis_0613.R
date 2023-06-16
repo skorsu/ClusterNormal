@@ -1,9 +1,9 @@
 rm(list = ls())
 
 ### FIX ME: --------------------------------------------------------------------
-scenario_now <- 3 ## Scenario
-scale_dat <- FALSE ## scale the data
-file_path <- "/Users/kevin-imac/Desktop/Result/Sensitivity/"
+scenario_now <- 1 ## Scenario
+scale_dat <- TRUE ## scale the data
+file_path <- "/Users/kevinkvp/Desktop/"
 save_name_analysis <- paste0(file_path, "sensitivity_", scenario_now, 
                              "_scale_", scale_dat, ".RData") 
 n_param <- 30
