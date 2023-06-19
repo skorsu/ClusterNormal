@@ -53,6 +53,22 @@ SFDMM_model <- function(iter, K_max, init_assign, y, a0, b0, mu0, s20, xi0, a_th
     .Call(`_ClusterNormal_SFDMM_model`, iter, K_max, init_assign, y, a0, b0, mu0, s20, xi0, a_theta, b_theta, launch_iter, print_iter)
 }
 
+SFCMM_realloc <- function(y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu, s2, alpha_vec) {
+    .Call(`_ClusterNormal_SFCMM_realloc`, y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu, s2, alpha_vec)
+}
+
+SFCMM_SM <- function(y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu_init, s2_init, alpha_init, launch_iter) {
+    .Call(`_ClusterNormal_SFCMM_SM`, y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu_init, s2_init, alpha_init, launch_iter)
+}
+
+SFCMM_param <- function(clus_assign, y, mu, s2, alpha_vec, old_U, K_max, a0, b0, mu0, s20, xi0) {
+    .Call(`_ClusterNormal_SFCMM_param`, clus_assign, y, mu, s2, alpha_vec, old_U, K_max, a0, b0, mu0, s20, xi0)
+}
+
+SFCMM_model <- function(iter, K_max, init_assign, y, a0, b0, mu0, s20, xi0, launch_iter, print_iter) {
+    .Call(`_ClusterNormal_SFCMM_model`, iter, K_max, init_assign, y, a0, b0, mu0, s20, xi0, launch_iter, print_iter)
+}
+
 rcpparma_hello_world <- function() {
     .Call(`_ClusterNormal_rcpparma_hello_world`)
 }

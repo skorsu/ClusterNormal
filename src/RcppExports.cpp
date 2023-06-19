@@ -235,6 +235,92 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// SFCMM_realloc
+Rcpp::List SFCMM_realloc(arma::vec y, unsigned int K_max, double a0, double b0, double mu0, double s20, double xi0, arma::vec ci_init, arma::vec mu, arma::vec s2, arma::vec alpha_vec);
+RcppExport SEXP _ClusterNormal_SFCMM_realloc(SEXP ySEXP, SEXP K_maxSEXP, SEXP a0SEXP, SEXP b0SEXP, SEXP mu0SEXP, SEXP s20SEXP, SEXP xi0SEXP, SEXP ci_initSEXP, SEXP muSEXP, SEXP s2SEXP, SEXP alpha_vecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type K_max(K_maxSEXP);
+    Rcpp::traits::input_parameter< double >::type a0(a0SEXP);
+    Rcpp::traits::input_parameter< double >::type b0(b0SEXP);
+    Rcpp::traits::input_parameter< double >::type mu0(mu0SEXP);
+    Rcpp::traits::input_parameter< double >::type s20(s20SEXP);
+    Rcpp::traits::input_parameter< double >::type xi0(xi0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type ci_init(ci_initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type s2(s2SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type alpha_vec(alpha_vecSEXP);
+    rcpp_result_gen = Rcpp::wrap(SFCMM_realloc(y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu, s2, alpha_vec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// SFCMM_SM
+Rcpp::List SFCMM_SM(arma::vec y, unsigned int K_max, double a0, double b0, double mu0, double s20, double xi0, arma::vec ci_init, arma::vec mu_init, arma::vec s2_init, arma::vec alpha_init, int launch_iter);
+RcppExport SEXP _ClusterNormal_SFCMM_SM(SEXP ySEXP, SEXP K_maxSEXP, SEXP a0SEXP, SEXP b0SEXP, SEXP mu0SEXP, SEXP s20SEXP, SEXP xi0SEXP, SEXP ci_initSEXP, SEXP mu_initSEXP, SEXP s2_initSEXP, SEXP alpha_initSEXP, SEXP launch_iterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type K_max(K_maxSEXP);
+    Rcpp::traits::input_parameter< double >::type a0(a0SEXP);
+    Rcpp::traits::input_parameter< double >::type b0(b0SEXP);
+    Rcpp::traits::input_parameter< double >::type mu0(mu0SEXP);
+    Rcpp::traits::input_parameter< double >::type s20(s20SEXP);
+    Rcpp::traits::input_parameter< double >::type xi0(xi0SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type ci_init(ci_initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu_init(mu_initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type s2_init(s2_initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type alpha_init(alpha_initSEXP);
+    Rcpp::traits::input_parameter< int >::type launch_iter(launch_iterSEXP);
+    rcpp_result_gen = Rcpp::wrap(SFCMM_SM(y, K_max, a0, b0, mu0, s20, xi0, ci_init, mu_init, s2_init, alpha_init, launch_iter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// SFCMM_param
+Rcpp::List SFCMM_param(arma::vec clus_assign, arma::vec y, arma::vec mu, arma::vec s2, arma::vec alpha_vec, double old_U, unsigned int K_max, double a0, double b0, double mu0, double s20, double xi0);
+RcppExport SEXP _ClusterNormal_SFCMM_param(SEXP clus_assignSEXP, SEXP ySEXP, SEXP muSEXP, SEXP s2SEXP, SEXP alpha_vecSEXP, SEXP old_USEXP, SEXP K_maxSEXP, SEXP a0SEXP, SEXP b0SEXP, SEXP mu0SEXP, SEXP s20SEXP, SEXP xi0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type clus_assign(clus_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type s2(s2SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type alpha_vec(alpha_vecSEXP);
+    Rcpp::traits::input_parameter< double >::type old_U(old_USEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type K_max(K_maxSEXP);
+    Rcpp::traits::input_parameter< double >::type a0(a0SEXP);
+    Rcpp::traits::input_parameter< double >::type b0(b0SEXP);
+    Rcpp::traits::input_parameter< double >::type mu0(mu0SEXP);
+    Rcpp::traits::input_parameter< double >::type s20(s20SEXP);
+    Rcpp::traits::input_parameter< double >::type xi0(xi0SEXP);
+    rcpp_result_gen = Rcpp::wrap(SFCMM_param(clus_assign, y, mu, s2, alpha_vec, old_U, K_max, a0, b0, mu0, s20, xi0));
+    return rcpp_result_gen;
+END_RCPP
+}
+// SFCMM_model
+Rcpp::List SFCMM_model(int iter, unsigned int K_max, arma::vec init_assign, arma::vec y, double a0, double b0, double mu0, double s20, double xi0, int launch_iter, int print_iter);
+RcppExport SEXP _ClusterNormal_SFCMM_model(SEXP iterSEXP, SEXP K_maxSEXP, SEXP init_assignSEXP, SEXP ySEXP, SEXP a0SEXP, SEXP b0SEXP, SEXP mu0SEXP, SEXP s20SEXP, SEXP xi0SEXP, SEXP launch_iterSEXP, SEXP print_iterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type iter(iterSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type K_max(K_maxSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type init_assign(init_assignSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type a0(a0SEXP);
+    Rcpp::traits::input_parameter< double >::type b0(b0SEXP);
+    Rcpp::traits::input_parameter< double >::type mu0(mu0SEXP);
+    Rcpp::traits::input_parameter< double >::type s20(s20SEXP);
+    Rcpp::traits::input_parameter< double >::type xi0(xi0SEXP);
+    Rcpp::traits::input_parameter< int >::type launch_iter(launch_iterSEXP);
+    Rcpp::traits::input_parameter< int >::type print_iter(print_iterSEXP);
+    rcpp_result_gen = Rcpp::wrap(SFCMM_model(iter, K_max, init_assign, y, a0, b0, mu0, s20, xi0, launch_iter, print_iter));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpparma_hello_world
 arma::mat rcpparma_hello_world();
 RcppExport SEXP _ClusterNormal_rcpparma_hello_world() {
@@ -293,6 +379,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ClusterNormal_SFDMM_SM", (DL_FUNC) &_ClusterNormal_SFDMM_SM, 14},
     {"_ClusterNormal_SFDMM_param", (DL_FUNC) &_ClusterNormal_SFDMM_param, 12},
     {"_ClusterNormal_SFDMM_model", (DL_FUNC) &_ClusterNormal_SFDMM_model, 13},
+    {"_ClusterNormal_SFCMM_realloc", (DL_FUNC) &_ClusterNormal_SFCMM_realloc, 11},
+    {"_ClusterNormal_SFCMM_SM", (DL_FUNC) &_ClusterNormal_SFCMM_SM, 12},
+    {"_ClusterNormal_SFCMM_param", (DL_FUNC) &_ClusterNormal_SFCMM_param, 12},
+    {"_ClusterNormal_SFCMM_model", (DL_FUNC) &_ClusterNormal_SFCMM_model, 11},
     {"_ClusterNormal_rcpparma_hello_world", (DL_FUNC) &_ClusterNormal_rcpparma_hello_world, 0},
     {"_ClusterNormal_rcpparma_outerproduct", (DL_FUNC) &_ClusterNormal_rcpparma_outerproduct, 1},
     {"_ClusterNormal_rcpparma_innerproduct", (DL_FUNC) &_ClusterNormal_rcpparma_innerproduct, 1},

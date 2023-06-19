@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-        "file_last_write": 1686676697.0,
+        "file_last_write": 1687195289.0,
         "definitions": [
             {
                 "usr": "c:@F@log_sum_exp#$@N@arma@S@Col>#d#",
@@ -129,7 +129,47 @@
                 "parent_name": "",
                 "name": "SFDMM_model(int, unsigned int, arma::vec, arma::vec, double, double, double, double, double, double, double, int, int)",
                 "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
-                "line": 659,
+                "line": 658,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@SFCMM_realloc#$@N@arma@S@Col>#d#i#d#d#d#d#d#S0_#S0_#S0_#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "SFCMM_realloc(arma::vec, unsigned int, double, double, double, double, double, arma::vec, arma::vec, arma::vec, arma::vec)",
+                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
+                "line": 758,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@SFCMM_SM#$@N@arma@S@Col>#d#i#d#d#d#d#d#S0_#S0_#S0_#S0_#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "SFCMM_SM(arma::vec, unsigned int, double, double, double, double, double, arma::vec, arma::vec, arma::vec, arma::vec, int)",
+                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
+                "line": 843,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@SFCMM_param#$@N@arma@S@Col>#d#S0_#S0_#S0_#S0_#d#i#d#d#d#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "SFCMM_param(arma::vec, arma::vec, arma::vec, arma::vec, arma::vec, double, unsigned int, double, double, double, double, double)",
+                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
+                "line": 997,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@SFCMM_model#I#i#$@N@arma@S@Col>#d#S0_#d#d#d#d#d#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "SFCMM_model(int, unsigned int, arma::vec, arma::vec, double, double, double, double, double, int, int)",
+                "file": "/Users/kevinkvp/Desktop/Github Repo/ClusterNormal/src/main.cpp",
+                "line": 1070,
                 "column": 12,
                 "hidden": false
             }
