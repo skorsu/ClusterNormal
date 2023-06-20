@@ -768,30 +768,29 @@ Rcpp::List SFCMM_realloc(arma::vec y, unsigned int K_max, double a0, double b0,
   Rcpp::List result;
   
   // Obtain the active cluster's index
-  arma::vec clus_active = arma::unique(ci_init);
-  unsigned int K_pos = clus_active.size();
+  // arma::vec clus_active = arma::unique(ci_init);
+  // unsigned int K_pos = clus_active.size();
   
   // Reallocate the observation to one of the active cluster.
   for(int i = 0; i < y.size(); ++i){
     
-    arma::vec log_realloc(clus_active.size(), arma::fill::value(0.0));
+    arma::vec log_realloc(K_max, arma::fill::value(0.0));
     
     double yi = y[i];
     arma::vec c_not_i(ci_init);
     c_not_i.shed_row(i);
     
-    for(int k = 0; k < K_pos; ++k){
-      int cc = clus_active[k];
-      arma::uvec nk_vec = arma::find(c_not_i == cc);
-      log_realloc.row(k).fill(std::log(nk_vec.size() + xi0) + R::dnorm4(yi, mu[cc], std::sqrt(s2[cc]), 1));
+    for(int k = 0; k < K_max; ++k){
+      arma::uvec nk_vec = arma::find(c_not_i == k);
+      log_realloc.row(k).fill(std::log(nk_vec.size() + xi0) + R::dnorm4(yi, mu[k], std::sqrt(s2[k]), 1));
     }
     
     Rcpp::NumericVector realloc_prob = Rcpp::as<Rcpp::NumericVector>(Rcpp::wrap(log_sum_exp(log_realloc)));
     
-    Rcpp::IntegerVector ind_vec = rmultinom_1(realloc_prob, K_pos);
+    Rcpp::IntegerVector ind_vec = rmultinom_1(realloc_prob, K_max);
     arma::vec ind_arma = Rcpp::as<arma::vec>(Rcpp::wrap(ind_vec));
     arma::uword new_assign_i = arma::index_max(ind_arma);
-    ci_init.row(i).fill(clus_active[new_assign_i]);
+    ci_init.row(i).fill(new_assign_i);
     
   }
   
@@ -813,9 +812,6 @@ Rcpp::List SFCMM_realloc(arma::vec y, unsigned int K_max, double a0, double b0,
       s2.row(k).fill(1/(R::rgamma(an, (1/bn))));
     }
   }
-  
-  // Update the alpha vector
-  alpha_vec = adjust_alpha(K_max, ci_init, alpha_vec);
   
   // Relabel: Label Switching protection
   arma::uvec mu_sort_order = arma::sort_index(mu, "descend");
@@ -878,7 +874,9 @@ Rcpp::List SFCMM_SM(arma::vec y, unsigned int K_max, double a0, double b0,
   if(samp_clus[0] == samp_clus[1]){
     split_ind = 1; // Split
     
-    arma::uvec inactive_index = arma::find(alpha_init == 0);
+    arma::vec dummy_alpha = adjust_alpha(K_max, ci_init, alpha_init);
+    
+    arma::uvec inactive_index = arma::find(dummy_alpha == 0);
     arma::uvec new_clus_index = arma::randperm(inactive_index.size(), 1);
     new_clus = inactive_index[new_clus_index[0]]; // new active cluster
     samp_clus.row(0).fill(new_clus);
@@ -978,9 +976,6 @@ Rcpp::List SFCMM_SM(arma::vec y, unsigned int K_max, double a0, double b0,
     new_alpha = proposed_alpha;
   }
   
-  // Update alpha vector
-  new_alpha = adjust_alpha(K_max, new_assign, new_alpha);
-  
   result["split_ind"] = split_ind;
   result["accept_proposed"] = accept_proposed;
   result["log_A"] = log_A;
@@ -1008,12 +1003,10 @@ Rcpp::List SFCMM_param(arma::vec clus_assign, arma::vec y, arma::vec mu, arma::v
   arma::vec new_alpha(alpha_vec); 
   
   // update alpha vector
-  arma::vec active_clus = arma::unique(clus_assign);
-  for(int k = 0; k < active_clus.size(); ++k){
-    int current_c = active_clus[k];
-    arma::uvec nk = arma::find(clus_assign == current_c);
+  for(int k = 0; k < K_max; ++k){
+    arma::uvec nk = arma::find(clus_assign == k);
     double scale_gamma = 1/(1 + old_U); // change the rate to scale parameter
-    new_alpha.row(current_c).fill(R::rgamma(nk.size() + xi0, scale_gamma));
+    new_alpha.row(k).fill(R::rgamma(nk.size() + xi0, scale_gamma));
   }
   
   // update U
@@ -1077,14 +1070,8 @@ Rcpp::List SFCMM_model(int iter, unsigned int K_max, arma::vec init_assign,
   
   Rcpp::List result;
   
-  // Initial alpha
-  arma::uvec init_unique = arma::conv_to<arma::uvec>::from(arma::unique(init_assign));
-  arma::vec init_alpha(K_max, arma::fill::zeros);
-  for(int k = 0; k < init_unique.size(); ++k){
-    init_alpha.row(init_unique[k]).fill(R::rgamma(xi0, 1.0));
-  }
-  
-  // Initialize mu and s2 for all clusters.
+  // Initialize alpha, mu and s2 for all clusters.
+  arma::vec init_alpha = arma::randg(K_max, arma::distr_param(xi0, 1.0));
   arma::vec mu = arma::randn(K_max, arma::distr_param(mu0, std::sqrt(s20)));
   arma::vec s2 = 1/(arma::randg(K_max, arma::distr_param(a0, 1/b0)));
   
